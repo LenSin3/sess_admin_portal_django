@@ -1,0 +1,22 @@
+
+.roboto-flex-company-header {
+    font-family: "Roboto Flex", serif !important;
+  }
+
+  body[data-bs-theme="dark"] .navbar-brand {
+    color: #068590; /* Your desired color */
+    font-weight: 600;
+}
+
+body[data-bs-theme="dark"] .navbar {
+  border: 1px solid #068590;
+}
+
+body[data-bs-theme="dark"] .main-content {
+  border: 1px solid #068590;
+  margin-top: 20px;
+}
+
+h1.main-header {
+  color: #068590 !important;
+}
