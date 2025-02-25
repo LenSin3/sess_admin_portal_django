@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "sess_admin_portal.apps.SessAdminPortalConfig",
+    "smart_selects",
 ]
 
 MIDDLEWARE = [

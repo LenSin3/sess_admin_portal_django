@@ -1,0 +1,40 @@
+{% extends 'sess_admin_portal/base.html' %} 
+{% load custom_filters %}
+
+{% block content %}
+  <div class="container mt-4">
+    
+    <form method="post">
+      {% csrf_token %}
+      <h3>Timesheet for Pay Period: {{ start_date }} to {{ end_date }}</h3>
+  
+      <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Date</th>
+                <th>Time In</th>
+                <th>Time Out</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for day in days %}
+                <tr>
+                    <td>{{ day }}</td>
+                    <td>
+                        <input type="time" name="time_in_{{ day }}" class="form-control"
+                               value="{% if timesheets|get_item:day %}{{ timesheets|get_item:day.time_in|default_if_none:'' }}{% endif %}">
+                    </td>
+                    <td>
+                        <input type="time" name="time_out_{{ day }}" class="form-control"
+                               value="{% if timesheets|get_item:day %}{{ timesheets|get_item:day.time_out|default_if_none:'' }}{% endif %}">
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+  
+      <button type="submit" class="btn btn-primary">Submit Timesheet</button>
+  </form>
+  
+  </div>
+{% endblock %}

@@ -27,14 +27,15 @@
                     <a class="nav-link active" aria-current="page" href="#">Home</a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="#">Client Management</a>
+                    <a class="nav-link" href="{% url 'client_management' %}">Client Management</a>
                   </li>
                   <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                       Employee Tools
                     </a>
                     <ul class="dropdown-menu">
-                      <li><a class="dropdown-item" href="#">Timesheet Management</a></li>
+                      <li><a class="dropdown-item" href="{% url 'timesheet_management' %}">Submit Timesheet</a></li>
+                      <li><a class="dropdown-item" href="{% url 'timesheet' %}">Timesheet Summary</a></li>
                       <li><a class="dropdown-item" href="#">PTO Management</a></li>
                     </ul>
                   </li>
@@ -44,7 +45,7 @@
           </nav>
           </div>
         <div class="container-fluid main-content">
-            <h1 class="text-center main-header">Sierra Environmental and Social Services Admin Portal</h1>
+           
     {% block content %}{% endblock %}
         </div>
         </div>

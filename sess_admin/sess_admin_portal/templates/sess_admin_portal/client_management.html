@@ -1,0 +1,25 @@
+{% extends 'sess_admin_portal/base.html' %}
+{% block content %}
+<h2>Welcome to the Client Management Portal</h2>
+<div>
+    <p>Here you can manage your clients and their information. Use the buttons below to access your client details and chart.</p>
+    <p>You will use the Daily Activity Report button to chart/log activities done per day.</p>
+</div>
+<div class="container mt-4">
+    <div class="col-12">
+        <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Tooltip on top">
+            Tooltip on top
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Tooltip on right">
+            Tooltip on right
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Tooltip on bottom">
+            Tooltip on bottom
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Tooltip on left">
+            Tooltip on left
+          </button>
+    </div>
+    
+</div>
+{% endblock %}

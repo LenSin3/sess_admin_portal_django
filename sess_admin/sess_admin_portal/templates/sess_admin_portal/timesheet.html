@@ -1,0 +1,46 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Timesheet Summary for Pay Period: {{ start_date }} to {{ end_date }}</h2>
+  <p><strong>Debug Total Hours:</strong> {{ total_hours }}</p>  {# This helps confirm if total_hours is being passed #}
+
+  {% if submission %}
+    <table class="table table-bordered table-striped">
+      <thead class="thead-dark">
+        <tr>
+          <th>Pay Period</th>
+          <th>Total Hours</th>
+          <th>Submission Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ start_date }} to {{ end_date }}</td>
+          <td>{{ total_hours }}</td>
+          <td>
+            {% if submission.status == 'Pending' %}
+              <span class="badge badge-warning">Pending</span>
+            {% elif submission.status == 'Approved' %}
+              <span class="badge badge-success">Approved</span>
+            {% elif submission.status == 'Rejected' %}
+              <span class="badge badge-danger">Rejected</span>
+            {% else %}
+              <span class="badge badge-secondary">{{ submission.status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- Optionally, show an edit/resubmit link only if the status is Pending or Rejected -->
+    {% if submission.status == 'Pending' or submission.status == 'Rejected' %}
+  <a href="{% url 'edit_timesheet' submission.id %}" class="btn btn-warning">Edit/Resubmit Timesheet</a>
+{% endif %}
+
+  {% else %}
+    <div class="alert alert-warning" role="alert">
+      You have not submitted a timesheet for the current pay period.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

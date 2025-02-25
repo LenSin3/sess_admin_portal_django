@@ -1,0 +1,9 @@
+{% extends "sess_admin_portal/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Timesheet Submitted Successfully</h2>
+    <p>Your timesheet has been submitted for review.</p>
+    <a href="{% url 'timesheet_management' %}" class="btn btn-primary">Back to Timesheet</a>
+</div>
+{% endblock %}
