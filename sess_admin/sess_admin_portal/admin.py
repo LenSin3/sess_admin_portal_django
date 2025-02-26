@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericStackedInline
-from .models import Address, RegionalCenter, Client, Program, Category, Diagnosis, Medication, ClientFamily, ExternalCareTeam, Appointment, Employee, DailyReport, MedicalHistory, MedicationRegimen, ClientProgram, Timesheet, PTO, TimesheetSubmission
+from .models import Address, RegionalCenter, Client, Program, Category, Diagnosis, Medication, ClientFamily, ExternalCareTeam, \
+Appointment, Employee, DailyReport, MedicalHistory, MedicationRegimen, ClientProgram, Timesheet, PTO, TimesheetSubmission, \
+    ProfilePicture, Announcement
 
 # Register your models here.
 # RegionalCenter
@@ -53,6 +55,42 @@ class TimesheetSubmissionAdmin(admin.ModelAdmin):
     list_display = ("employee", "start_date", "end_date", "status")
     list_filter = ("status", "start_date", "end_date")
     search_fields = ("employee__first_name", "employee__last_name")
+    
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ('title', 'announcement_type', 'date_posted', 'expiry_date', 'posted_by', 'important', 'is_expired')
+    list_filter = ('announcement_type', 'important', 'date_posted')
+    search_fields = ('title', 'content')
+    date_hierarchy = 'date_posted'
+    readonly_fields = ('date_posted',)
+    
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'content', 'announcement_type', 'important')
+        }),
+        ('Timing', {
+            'fields': ('date_posted', 'expiry_date'),
+        }),
+        ('Author', {
+            'fields': ('posted_by',),
+        }),
+        ('Media', {
+            'fields': ('image',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        """Auto-set the posted_by field to current user if not set"""
+        if not obj.posted_by:
+            obj.posted_by = request.user
+        super().save_model(request, obj, form, change)
+        
+    def is_expired(self, obj):
+        """Display if an announcement is expired"""
+        return obj.is_expired
+    is_expired.boolean = True
+    is_expired.short_description = "Expired"
 
 admin.site.register(Timesheet, TimesheetAdmin)
 admin.site.register(TimesheetSubmission, TimesheetSubmissionAdmin)
@@ -75,4 +113,5 @@ admin.site.register(ClientProgram)
 # admin.site.register(Timesheet)
 admin.site.register(PTO)
 # admin.site.register(TimesheetSubmission)
+admin.site.register(ProfilePicture)
 

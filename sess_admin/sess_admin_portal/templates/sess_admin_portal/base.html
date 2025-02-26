@@ -79,13 +79,32 @@
                         </div>
                     </div>
 
-                    {% if user.is_superuser or user.is_staff %}
-<div class="sidebar-nav-item">
-    <a href="{% url 'analytics_dashboard' %}" class="sidebar-link">
-        <i class="bi bi-graph-up"></i> Analytics
-    </a>
-</div>
-{% endif %}
+                    {% if user.is_staff or user.is_superuser %}
+    <div class="sidebar-nav-item mt-4">
+        <span class="sidebar-nav-header">Admin Tools</span>
+    </div>
+    
+    <div class="sidebar-nav-item">
+        <a href="{% url 'manage_announcements' %}" class="sidebar-link {% if 'announcements' in request.path %}active{% endif %}">
+            <i class="bi bi-megaphone"></i>
+            <span>Announcements</span>
+        </a>
+    </div>
+    
+    <div class="sidebar-nav-item">
+        <a href="{% url 'admin_timesheets' %}" class="sidebar-link {% if 'admin_timesheets' in request.path %}active{% endif %}">
+            <i class="bi bi-file-earmark-check"></i>
+            <span>Timesheet Admin</span>
+        </a>
+    </div>
+    
+    <div class="sidebar-nav-item">
+        <a href="{% url 'analytics_dashboard' %}" class="sidebar-link {% if 'analytics' in request.path %}active{% endif %}">
+            <i class="bi bi-graph-up"></i>
+            <span>Analytics</span>
+        </a>
+    </div>
+    {% endif %}
                     
                     <div class="sidebar-nav-item mt-4">
                         <a href="{% url 'profile' %}" class="sidebar-link {% if request.path == '/profile/' %}active{% endif %}">

@@ -26,4 +26,16 @@ urlpatterns = [
     
     # Admin analytics
     path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
+    
+    # Announcement management
+    path('announcements/', views.manage_announcements, name='manage_announcements'),
+    path('announcements/create/', views.create_announcement, name='create_announcement'),
+    path('announcements/<int:announcement_id>/edit/', views.edit_announcement, name='edit_announcement'),
+    path('announcements/<int:announcement_id>/delete/', views.delete_announcement, name='delete_announcement'),
+    path('announcements/<int:announcement_id>/view/', views.view_announcement, name='view_announcement'),
+    
+    # Admin timesheet management
+    path('admin/timesheets/', views.admin_timesheets, name='admin_timesheets'),
+    path('admin/approve_timesheet/<int:submission_id>/', views.approve_timesheet, name='approve_timesheet'),
+    path('admin/reject_timesheet/<int:submission_id>/', views.reject_timesheet, name='reject_timesheet'),
 ]

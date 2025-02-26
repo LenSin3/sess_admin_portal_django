@@ -321,8 +321,8 @@ class Timesheet(models.Model):
         """
         if self.time_in and self.time_out:
             # Convert string times to datetime objects for calculation
-            time_in_dt = datetime.combine(self.date, self.time_in)
-            time_out_dt = datetime.combine(self.date, self.time_out)
+            time_in_dt = datetime.datetime.combine(self.date, self.time_in)
+            time_out_dt = datetime.datetime.combine(self.date, self.time_out)
             
             # Calculate the difference
             delta = time_out_dt - time_in_dt
@@ -375,5 +375,57 @@ class PTO(models.Model):
     
     def __str__(self):
         return f"PTO: {self.date} - {self.time_off}"
+    
+# Add to your models.py
+
+class Announcement(models.Model):
+    """Model to store company announcements"""
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    date_posted = models.DateTimeField(auto_now_add=True)
+    expiry_date = models.DateField(null=True, blank=True, help_text="Leave blank if announcement doesn't expire")
+    posted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='announcements')
+    important = models.BooleanField(default=False, help_text="Important announcements are highlighted")
+    
+    # Define choices for announcement types
+    TYPE_GENERAL = 'general'
+    TYPE_POLICY = 'policy'
+    TYPE_EVENT = 'event'
+    TYPE_HOLIDAY = 'holiday'
+    
+    TYPE_CHOICES = [
+        (TYPE_GENERAL, 'General'),
+        (TYPE_POLICY, 'Policy Update'),
+        (TYPE_EVENT, 'Event'),
+        (TYPE_HOLIDAY, 'Holiday'),
+    ]
+    
+    announcement_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES,
+        default=TYPE_GENERAL
+    )
+    
+    # Optional image for the announcement
+    image = models.ImageField(upload_to='announcements/', null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-date_posted']
+    
+    def __str__(self):
+        return self.title
+    
+    @property
+    def is_expired(self):
+        """Check if announcement has expired"""
+        if self.expiry_date:
+            return self.expiry_date < timezone.now().date()
+        return False
+    
+    @property
+    def days_ago(self):
+        """Return how many days ago the announcement was posted"""
+        delta = timezone.now().date() - self.date_posted.date()
+        return delta.days
     
     

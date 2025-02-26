@@ -7,10 +7,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.contrib import messages
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import Timesheet, TimesheetSubmission, Client, MedicalHistory, Appointment, DailyReport, Employee, ClientFamily, MedicationRegimen, ClientProgram, ExternalCareTeam, ProfilePicture, RegionalCenter
+from django.db.models import Q
+from .forms import AnnouncementForm
+from .models import Timesheet, TimesheetSubmission, Client, MedicalHistory, Appointment, DailyReport, Employee, ClientFamily, \
+    MedicationRegimen, ClientProgram, ExternalCareTeam, ProfilePicture, RegionalCenter, Announcement
 
 
 def login_view(request):
@@ -337,154 +340,150 @@ def analytics_dashboard(request):
     
     return render(request, 'sess_admin_portal/analytics_dashboard.html', context)
 
-
-
-
-
-
-
-
-
-
 @login_required
 def home(request):
-    """Enhanced home view with client info, upcoming appointments, and more"""
+    """Enhanced home view with dynamic announcements"""
     # Get the employee and associated client
     employee = get_object_or_404(Employee, user=request.user)
     client = employee.client
     
+    # Get active announcements (not expired)
+    today = timezone.now().date()
+    announcements = Announcement.objects.filter(
+        Q(expiry_date__isnull=True) | Q(expiry_date__gte=today)
+    ).order_by('-important', '-date_posted')[:5]  # Show 5 most recent announcements, prioritizing important ones
+    
+    # Format announcements for template
+    company_announcements = []
+    for announcement in announcements:
+        # Format days ago text
+        if announcement.days_ago == 0:
+            time_text = "Today"
+        elif announcement.days_ago == 1:
+            time_text = "Yesterday"
+        else:
+            time_text = f"{announcement.days_ago} days ago"
+            
+        company_announcements.append({
+            'id': announcement.id,
+            'title': announcement.title,
+            'content': announcement.content,
+            'date': announcement.date_posted,
+            'time_text': time_text,
+            'posted_by': announcement.posted_by.get_full_name() if announcement.posted_by else "Admin",
+            'read_more': len(announcement.content) > 150,  # Show read more if content is long
+            'type': announcement.announcement_type,
+            'important': announcement.important,
+            'image': announcement.image.url if announcement.image else None
+        })
+    
     context = {
         'client': client,
+        'company_announcements': company_announcements,
+        # ... rest of your existing context ...
     }
     
-    # Get upcoming appointments
-    today = timezone.now().date()
-    upcoming_appointments = []
-    
-    if client:
-        appointments = Appointment.objects.filter(
-            client=client,
-            appointment_date__gte=today
-        ).order_by('appointment_date', 'appointment_time')[:5]
-        
-        # Add days_away and formatting class
-        for appointment in appointments:
-            days_away = (appointment.appointment_date - today).days
-            
-            # Determine badge class based on days away
-            if days_away == 0:
-                days_away_class = 'danger'  # Today
-            elif days_away <= 2:
-                days_away_class = 'warning'  # Soon
-            else:
-                days_away_class = 'info'  # Later
-                
-            appointment.days_away = days_away
-            appointment.days_away_class = days_away_class
-            
-        upcoming_appointments = appointments
-    
-    context['upcoming_appointments'] = upcoming_appointments
-    context['upcoming_appointments_count'] = len(upcoming_appointments)
-    
-    # Get recent daily reports (this week)
-    week_start = today - timedelta(days=today.weekday())
-    reports_this_week = DailyReport.objects.filter(
-        client=client,
-        employee=employee,
-        date__gte=week_start
-    ).count()
-    
-    context['reports_this_week'] = reports_this_week
-    
-    # Get timesheet data
-    hours_this_period = 0
-    
-    # Determine current pay period
-    if today.day <= 15:
-        pay_period_start = today.replace(day=1)
-        pay_period_end = today.replace(day=15)
-        timesheet_due = pay_period_end
-    else:
-        pay_period_start = today.replace(day=16)
-        # Get the end of month
-        next_month = pay_period_start.replace(day=28) + timedelta(days=4)
-        pay_period_end = next_month - timedelta(days=next_month.day)
-        timesheet_due = pay_period_end
-    
-    # Check if timesheet is due soon (within 3 days)
-    timesheet_due_soon = (timesheet_due - today).days <= 3 and (timesheet_due - today).days >= 0
-    
-    # Get hours for this period
-    timesheets = Timesheet.objects.filter(
-        employee=employee,
-        date__gte=pay_period_start,
-        date__lte=pay_period_end
-    )
-    
-    for timesheet in timesheets:
-        hours_this_period += timesheet.total_hours
-    
-    context['hours_this_period'] = round(hours_this_period, 1)
-    context['pay_period_start'] = pay_period_start
-    context['pay_period_end'] = pay_period_end
-    context['timesheet_due'] = timesheet_due if timesheet_due_soon else None
-    
-    # Sample company announcements
-    # In a real application, this would come from a database
-    context['company_announcements'] = [
-        {
-            'id': 1,
-            'title': 'Office Closed for Memorial Day',
-            'content': 'The office will be closed on Monday, May 27th in observance of Memorial Day. Regular hours will resume on Tuesday, May 28th.',
-            'date': date(2025, 5, 20),
-            'posted_by': 'HR Department',
-            'read_more': False
-        },
-        {
-            'id': 2,
-            'title': 'New Timesheet System Launching Next Month',
-            'content': 'We are excited to announce that our new timesheet system will be launching next month. The new system will include mobile app access, automatic reminders, and an improved approval workflow. Training sessions will be scheduled in the coming weeks.',
-            'date': date(2025, 5, 15),
-            'posted_by': 'IT Department',
-            'read_more': True
-        },
-        {
-            'id': 3,
-            'title': 'Annual Staff Picnic',
-            'content': 'Save the date for our annual staff picnic on Saturday, June 15th at Central Park. Families are welcome! Please RSVP by June 1st.',
-            'date': date(2025, 5, 10),
-            'posted_by': 'HR Department',
-            'read_more': False
-        }
-    ]
-    
-    # Recent activities (combination of daily reports, appointments, etc.)
-    # This would typically come from a dedicated activity log or be generated from various models
-    context['recent_activities'] = [
-        {
-            'type': 'Daily Report Submitted',
-            'description': f'Report submitted for {client.first_name} {client.last_name}',
-            'timestamp': timezone.now() - timedelta(hours=3)
-        },
-        {
-            'type': 'Timesheet Updated',
-            'description': 'Hours logged for May 18, 2025',
-            'timestamp': timezone.now() - timedelta(days=1)
-        },
-        {
-            'type': 'Appointment Created',
-            'description': f'Doctor appointment scheduled for {client.first_name} {client.last_name}',
-            'timestamp': timezone.now() - timedelta(days=2)
-        },
-        {
-            'type': 'Profile Updated',
-            'description': 'Contact information updated',
-            'timestamp': timezone.now() - timedelta(days=5)
-        }
-    ]
-    
     return render(request, "sess_admin_portal/home.html", context)
+
+@login_required
+@user_passes_test(is_admin_or_superuser)
+def manage_announcements(request):
+    """View to manage all announcements"""
+    announcements = Announcement.objects.all().order_by('-date_posted')
+    
+    # Filter options
+    announcement_type = request.GET.get('type')
+    if announcement_type:
+        announcements = announcements.filter(announcement_type=announcement_type)
+        
+    show_expired = request.GET.get('show_expired') == 'true'
+    if not show_expired:
+        today = timezone.now().date()
+        announcements = announcements.filter(
+            models.Q(expiry_date__isnull=True) | models.Q(expiry_date__gte=today)
+        )
+    
+    context = {
+        'announcements': announcements,
+        'announcement_types': Announcement.TYPE_CHOICES,
+        'selected_type': announcement_type,
+        'show_expired': show_expired
+    }
+    
+    return render(request, 'sess_admin_portal/manage_announcements.html', context)
+
+@login_required
+@user_passes_test(is_admin_or_superuser)
+def create_announcement(request):
+    """View to create a new announcement"""
+    if request.method == 'POST':
+        form = AnnouncementForm(request.POST, request.FILES)
+        if form.is_valid():
+            announcement = form.save(commit=False)
+            announcement.posted_by = request.user
+            announcement.save()
+            messages.success(request, 'Announcement created successfully!')
+            return redirect('manage_announcements')
+    else:
+        form = AnnouncementForm()
+    
+    context = {
+        'form': form,
+        'title': 'Create Announcement'
+    }
+    
+    return render(request, 'sess_admin_portal/announcement_form.html', context)
+
+@login_required
+@user_passes_test(is_admin_or_superuser)
+def edit_announcement(request, announcement_id):
+    """View to edit an existing announcement"""
+    announcement = get_object_or_404(Announcement, id=announcement_id)
+    
+    if request.method == 'POST':
+        form = AnnouncementForm(request.POST, request.FILES, instance=announcement)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Announcement updated successfully!')
+            return redirect('manage_announcements')
+    else:
+        form = AnnouncementForm(instance=announcement)
+    
+    context = {
+        'form': form,
+        'announcement': announcement,
+        'title': 'Edit Announcement'
+    }
+    
+    return render(request, 'sess_admin_portal/announcement_form.html', context)
+
+@login_required
+@user_passes_test(is_admin_or_superuser)
+def delete_announcement(request, announcement_id):
+    """View to delete an announcement"""
+    announcement = get_object_or_404(Announcement, id=announcement_id)
+    
+    if request.method == 'POST':
+        announcement.delete()
+        messages.success(request, 'Announcement deleted successfully!')
+        return redirect('manage_announcements')
+    
+    context = {
+        'announcement': announcement
+    }
+    
+    return render(request, 'sess_admin_portal/confirm_delete_announcement.html', context)
+
+@login_required
+def view_announcement(request, announcement_id):
+    """View to see a single announcement in detail"""
+    announcement = get_object_or_404(Announcement, id=announcement_id)
+    
+    context = {
+        'announcement': announcement
+    }
+    
+    return render(request, 'sess_admin_portal/view_announcement.html', context)
 
 
 @login_required

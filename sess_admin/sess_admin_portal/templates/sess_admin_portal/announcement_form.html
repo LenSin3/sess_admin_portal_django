@@ -1,0 +1,239 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">{{ title }}</h2>
+        <p class="text-muted mb-0">
+            {% if form.instance.id %}Edit existing announcement{% else %}Create a new company announcement{% endif %}
+        </p>
+    </div>
+    <div>
+        <a href="{% url 'manage_announcements' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Announcements
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Announcement Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.title.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.content.id_for_label }}" class="form-label">Content</label>
+                        {{ form.content }}
+                        <div class="form-text">Markdown formatting is supported.</div>
+                        {% if form.content.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.content.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.announcement_type.id_for_label }}" class="form-label">Announcement Type</label>
+                            {{ form.announcement_type }}
+                            {% if form.announcement_type.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.announcement_type.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.expiry_date.id_for_label }}" class="form-label">Expiry Date</label>
+                            {{ form.expiry_date }}
+                            <div class="form-text">Leave blank if the announcement doesn't expire.</div>
+                            {% if form.expiry_date.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.expiry_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label">Image (Optional)</label>
+                        {{ form.image }}
+                        <div class="form-text">Upload an image to display with the announcement.</div>
+                        {% if form.image.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.image.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if form.instance.image %}
+                        <div class="mt-2">
+                            <img src="{{ form.instance.image.url }}" alt="Current image" class="img-thumbnail" style="max-height: 150px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.important }}
+                        <label class="form-check-label" for="{{ form.important.id_for_label }}">
+                            Mark as Important
+                        </label>
+                        <div class="form-text">Important announcements are highlighted and shown first.</div>
+                        {% if form.important.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.important.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'manage_announcements' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if form.instance.id %}Update Announcement{% else %}Create Announcement{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="announcement-preview">
+                    <h5 id="preview-title">{% if form.instance.title %}{{ form.instance.title }}{% else %}Announcement Title{% endif %}</h5>
+                    <p class="small text-muted">
+                        <span id="preview-type" class="badge bg-primary">{% if form.instance.announcement_type %}{{ form.instance.get_announcement_type_display }}{% else %}General{% endif %}</span>
+                        <span class="ms-2">Posted by: {{ user.get_full_name }}</span>
+                    </p>
+                    <div id="preview-content" class="mt-3">
+                        {% if form.instance.content %}{{ form.instance.content }}{% else %}Announcement content will appear here...{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Keep titles concise and informative.</li>
+                    <li>Use markdown for formatting content:
+                        <ul>
+                            <li><code>**Bold text**</code> for <strong>Bold text</strong></li>
+                            <li><code>*Italic text*</code> for <em>Italic text</em></li>
+                            <li><code># Heading</code> for headings</li>
+                            <li><code>- Item</code> for bullet points</li>
+                        </ul>
+                    </li>
+                    <li>Set an expiry date for time-sensitive announcements.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Live preview functionality
+        const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+        const contentInput = document.getElementById('{{ form.content.id_for_label }}');
+        const typeSelect = document.getElementById('{{ form.announcement_type.id_for_label }}');
+        
+        const previewTitle = document.getElementById('preview-title');
+        const previewContent = document.getElementById('preview-content');
+        const previewType = document.getElementById('preview-type');
+        
+        // Update title preview
+        if (titleInput) {
+            titleInput.addEventListener('input', function() {
+                previewTitle.textContent = this.value || 'Announcement Title';
+            });
+        }
+        
+        // Update content preview (basic for now)
+        if (contentInput) {
+            contentInput.addEventListener('input', function() {
+                previewContent.textContent = this.value || 'Announcement content will appear here...';
+            });
+        }
+        
+        // Update type badge
+        if (typeSelect) {
+            typeSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                previewType.textContent = selectedOption.text;
+                
+                // Update badge color based on type
+                previewType.className = 'badge';
+                switch (this.value) {
+                    case 'general':
+                        previewType.classList.add('bg-primary');
+                        break;
+                    case 'policy':
+                        previewType.classList.add('bg-warning');
+                        break;
+                    case 'event':
+                        previewType.classList.add('bg-success');
+                        break;
+                    case 'holiday':
+                        previewType.classList.add('bg-info');
+                        break;
+                    default:
+                        previewType.classList.add('bg-secondary');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
