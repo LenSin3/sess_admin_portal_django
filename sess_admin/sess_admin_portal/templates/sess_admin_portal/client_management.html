@@ -1,25 +1,611 @@
 {% extends 'sess_admin_portal/base.html' %}
+
+
+
+
+
+
 {% block content %}
-<h2>Welcome to the Client Management Portal</h2>
-<div>
-    <p>Here you can manage your clients and their information. Use the buttons below to access your client details and chart.</p>
-    <p>You will use the Daily Activity Report button to chart/log activities done per day.</p>
-</div>
-<div class="container mt-4">
-    <div class="col-12">
-        <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Tooltip on top">
-            Tooltip on top
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Tooltip on right">
-            Tooltip on right
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Tooltip on bottom">
-            Tooltip on bottom
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Tooltip on left">
-            Tooltip on left
-          </button>
+
+<!-- Page Header with Integrated Nav Options -->
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+    <div class="mb-3 mb-md-0">
+        <h2 class="mb-1">Client Management</h2>
+        <p class="text-muted mb-0">Manage client details, records, and activities</p>
     </div>
     
+    <!-- Mobile Dropdown (Visible on Small Screens) -->
+    <div class="d-md-none w-100">
+        <select class="form-select" id="mobileViewSelector" onchange="window.location.href=this.value">
+            <option value="?view=client-details" {% if request.GET.view == 'client-details' or not request.GET.view %}selected{% endif %}>Client Details</option>
+            <option value="?view=client-family" {% if request.GET.view == 'client-family' %}selected{% endif %}>Client Family</option>
+            <option value="?view=medical-history" {% if request.GET.view == 'medical-history' %}selected{% endif %}>Medical History</option>
+            <option value="?view=external-care-team" {% if request.GET.view == 'external-care-team' %}selected{% endif %}>External Care Team</option>
+            <option value="?view=programs" {% if request.GET.view == 'programs' %}selected{% endif %}>Programs</option>
+            <option value="?view=medications" {% if request.GET.view == 'medications' %}selected{% endif %}>Medications</option>
+            <option value="?view=appointments" {% if request.GET.view == 'appointments' %}selected{% endif %}>Appointments</option>
+            <option value="?view=activity-report" {% if request.GET.view == 'activity-report' %}selected{% endif %}>Daily Activity Report</option>
+        </select>
+    </div>
 </div>
+
+<!-- Tab Navigation (Visible on Medium and Larger Screens) -->
+<div class="d-none d-md-block client-tabs-wrapper mb-4">
+    <ul class="nav nav-tabs client-tabs" id="clientTabs" role="tablist">
+        <li class="nav-item">
+            <a href="?view=client-details" class="nav-link {% if request.GET.view == 'client-details' or not request.GET.view %}active{% endif %}">
+                <i class="bi bi-person me-1"></i> Client Details
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?view=client-family" class="nav-link {% if request.GET.view == 'client-family' %}active{% endif %}">
+                <i class="bi bi-people me-1"></i> Family
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?view=medical-history" class="nav-link {% if request.GET.view == 'medical-history' %}active{% endif %}">
+                <i class="bi bi-clipboard2-pulse me-1"></i> Medical History
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?view=external-care-team" class="nav-link {% if request.GET.view == 'external-care-team' %}active{% endif %}">
+                <i class="bi bi-hospital me-1"></i> External Care
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?view=programs" class="nav-link {% if request.GET.view == 'programs' %}active{% endif %}">
+                <i class="bi bi-bookmark me-1"></i> Programs
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?view=medications" class="nav-link {% if request.GET.view == 'medications' %}active{% endif %}">
+                <i class="bi bi-capsule me-1"></i> Medications
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?view=appointments" class="nav-link {% if request.GET.view == 'appointments' %}active{% endif %}">
+                <i class="bi bi-calendar-event me-1"></i> Appointments
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?view=activity-report" class="nav-link {% if request.GET.view == 'activity-report' %}active{% endif %}">
+                <i class="bi bi-journal-text me-1"></i> Activity Report
+            </a>
+        </li>
+    </ul>
+</div>
+
+<!-- Client Info Card -->
+{% if client %}
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-column flex-md-row">
+            <div class="client-avatar bg-primary rounded-circle me-md-4 mb-3 mb-md-0">
+                <i class="bi bi-person-fill"></i>
+            </div>
+            <div>
+                <h4 class="card-title mb-1">{{ client.first_name }} {{ client.last_name }}</h4>
+                <p class="text-muted mb-2">Client ID: SESS-{{ client.id }}</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge {% if client.active %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if client.active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                    {% if client_program %}
+                    <span class="badge bg-info">Program: {{ client_program.program.program }}</span>
+                    {% endif %}
+                    <span class="badge bg-secondary">Enrolled: {{ client.onboarding_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Dynamic Content Section -->
+<div class="content-container card">
+    <div class="card-body">
+        {% if request.GET.view == "medical-history" %}
+            <div class="section-header mb-3">
+                <h4>Medical History</h4>
+            </div>
+            <p>View client diagnosis and ongoing health conditions</p>
+            
+            <div class="table-responsive mt-4">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Diagnosis</th>
+                            <th>Category</th>
+                            <th>Doctor's Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if medical_history %}
+                            {% for record in medical_history %}
+                            <tr>
+                                <td>{{ record.date|date:"M d, Y" }}</td>
+                                <td>{{ record.diagnosis }}</td>
+                                <td>{{ record.category }}</td>
+                                <td>{{ record.doctors_notes|truncatechars:50 }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary">View</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No medical history records found.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+        {% elif request.GET.view == "external-care-team" %}
+            <div class="section-header mb-3">
+                <h4>External Care Team</h4>
+            </div>
+            <p>Information about external care providers</p>
+            
+            <div class="row g-4 mt-2">
+                {% if external_care_team %}
+                    {% for provider in external_care_team %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ provider.role }}</h5>
+                                <p class="card-text mb-1">{{ provider.first_name }} {{ provider.last_name }}</p>
+                                {% if provider.address %}
+                                <p class="card-text mb-1">{{ provider.address }}</p>
+                                {% endif %}
+                                <p class="card-text mb-3">
+                                    <small class="text-muted">{{ provider.phone_number }}</small>
+                                    {% if provider.email %}
+                                    <br><small class="text-muted">{{ provider.email }}</small>
+                                    {% endif %}
+                                </p>
+                                <button class="btn btn-sm btn-outline-primary">Contact</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <p class="text-center">No external care team members found.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+        {% elif request.GET.view == "programs" %}
+            <div class="section-header mb-3">
+                <h4>Programs</h4>
+            </div>
+            <p>Client enrollment programs</p>
+            
+            <div class="list-group mt-4">
+                {% if client_programs %}
+                    {% for client_program in client_programs %}
+                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ client_program.program.program }}</h6>
+                            <p class="mb-0 text-muted small">Enrolled: {{ client.onboarding_date|date:"M d, Y" }}</p>
+                        </div>
+                        <span class="badge bg-success rounded-pill">Active</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="list-group-item bg-transparent">
+                        <p class="text-center mb-0">No programs found for this client.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+        {% elif request.GET.view == "medications" %}
+            <div class="section-header mb-3">
+                <h4>Medications</h4>
+            </div>
+            <p>Prescribed medications and schedules</p>
+            
+            <div class="table-responsive mt-4">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Medication</th>
+                            <th>Dosage</th>
+                            <th>Frequency</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if medication_regimens %}
+                            {% for regimen in medication_regimens %}
+                            <tr>
+                                <td>{{ regimen.medication.medication }}</td>
+                                <td>{{ regimen.dosage }}</td>
+                                <td>{{ regimen.frequency }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary">View</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">No medications found for this client.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+        {% elif request.GET.view == "appointments" %}
+            <div class="section-header mb-3">
+                <h4>Appointments</h4>
+            </div>
+            <p>Upcoming and past appointments</p>
+            
+            <div class="card mb-4 mt-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Upcoming Appointments</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% if upcoming_appointments %}
+                        {% for appointment in upcoming_appointments %}
+                        <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ appointment.appointment_reason }}</h6>
+                                <p class="mb-0 text-muted small">{{ appointment.appointment_date|date:"M d, Y" }} at {{ appointment.appointment_time|time:"g:i A" }}</p>
+                                <p class="mb-0 text-muted small">{{ appointment.appointment_location }}</p>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary">View</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item bg-transparent">
+                            <p class="text-center mb-0">No upcoming appointments found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">Past Appointments</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% if past_appointments %}
+                        {% for appointment in past_appointments %}
+                        <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ appointment.appointment_reason }}</h6>
+                                <p class="mb-0 text-muted small">{{ appointment.appointment_date|date:"M d, Y" }} at {{ appointment.appointment_time|time:"g:i A" }}</p>
+                                <p class="mb-0 text-muted small">{{ appointment.appointment_location }}</p>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary">View</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item bg-transparent">
+                            <p class="text-center mb-0">No past appointments found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+        {% elif request.GET.view == "activity-report" %}
+            <div class="section-header mb-3 d-flex justify-content-between align-items-center">
+                <h4>Daily Activity Report</h4>
+                <a href="{% url 'add_daily_report' client.id %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus"></i> Add Report
+                </a>
+            </div>
+            <p>Logs of daily activities</p>
+            
+            <div class="card mb-4 mt-4">
+                <div class="card-header bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Reports</h5>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Staff</th>
+                                <th>Report</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if daily_reports %}
+                                {% for report in daily_reports %}
+                                <tr>
+                                    <td>{{ report.date|date:"M d, Y" }}</td>
+                                    <td>{{ report.time|time:"g:i A" }}</td>
+                                    <td>{{ report.employee.first_name }} {{ report.employee.last_name }}</td>
+                                    <td>{{ report.report|truncatechars:50 }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'view_daily_report' report.id %}" class="btn btn-sm btn-outline-secondary">View</a>
+                                            {% if report.employee.id == user.employee.id %}
+                                            <a href="{% url 'edit_daily_report' report.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            <a href="{% url 'delete_daily_report' report.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this report?')">Delete</a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No daily reports found.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        {% elif request.GET.view == "client-family" %}
+            <div class="section-header mb-3">
+                <h4>Client Family</h4>
+            </div>
+            <p>Family information and relationships</p>
+            
+            <div class="row g-4 mt-2">
+                {% if client_family %}
+                    {% for family_member in client_family %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ family_member.first_name }} {{ family_member.last_name }}</h5>
+                                <p class="card-text mb-1"><strong>Relationship:</strong> {{ family_member.relationship }}</p>
+                                {% if family_member.phone_number %}
+                                <p class="card-text mb-1"><strong>Phone:</strong> {{ family_member.phone_number }}</p>
+                                {% endif %}
+                                {% if family_member.email %}
+                                <p class="card-text mb-1"><strong>Email:</strong> {{ family_member.email }}</p>
+                                {% endif %}
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-primary">Contact</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <p class="text-center">No family members found for this client.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+        {% else %}
+            <div class="section-header mb-3">
+                <h4>Client Details</h4>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2">Personal Information</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                {% if client %}
+                                <tr>
+                                    <td class="text-muted" width="40%">Full Name</td>
+                                    <td>{{ client.first_name }} {% if client.middle_name %}{{ client.middle_name }} {% endif %}{{ client.last_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Date of Birth</td>
+                                    <td>{{ client.date_of_birth|date:"M d, Y" }} ({{ client.date_of_birth|timesince|slice:"0:-7" }})</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Gender</td>
+                                    <td>{{ client.sex }}</td>
+                                </tr>
+                                {% if client.address %}
+                                <tr>
+                                    <td class="text-muted">Address</td>
+                                    <td>{{ client.address }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if client.phone_number %}
+                                <tr>
+                                    <td class="text-muted">Phone</td>
+                                    <td>{{ client.phone_number }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if client.email %}
+                                <tr>
+                                    <td class="text-muted">Email</td>
+                                    <td>{{ client.email }}</td>
+                                </tr>
+                                {% endif %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="text-center">No client details available.</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2">Program Information</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                {% if client %}
+                                <tr>
+                                    <td class="text-muted" width="40%">Regional Center</td>
+                                    <td>{{ client.regional_center.regional_center }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Enrollment Date</td>
+                                    <td>{{ client.onboarding_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% if client.offboarding_date %}
+                                <tr>
+                                    <td class="text-muted">Offboarding Date</td>
+                                    <td>{{ client.offboarding_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td class="text-muted">Status</td>
+                                    <td><span class="badge {% if client.active %}bg-success{% else %}bg-danger{% endif %}">{% if client.active %}Active{% else %}Inactive{% endif %}</span></td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="text-center">No program information available.</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div>
+                        <h6 class="fw-bold mb-2">Emergency Contact</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                {% if emergency_contact %}
+                                <tr>
+                                    <td class="text-muted" width="40%">Name</td>
+                                    <td>{{ emergency_contact.first_name }} {{ emergency_contact.last_name }} ({{ emergency_contact.relationship }})</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Phone</td>
+                                    <td>{{ emergency_contact.phone_number }}</td>
+                                </tr>
+                                {% if emergency_contact.email %}
+                                <tr>
+                                    <td class="text-muted">Email</td>
+                                    <td>{{ emergency_contact.email }}</td>
+                                </tr>
+                                {% endif %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="text-center">No emergency contact information available.</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-header mt-4 mb-3">
+                <h5>Latest Activity Reports</h5>
+                <a href="?view=activity-report" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-list"></i> View All Reports
+                </a>
+            </div>
+            
+            <div class="list-group">
+                {% if recent_reports %}
+                    {% for report in recent_reports %}
+                    <div class="list-group-item bg-transparent">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Daily Report</h6>
+                            <small class="text-muted">{{ report.date|date:"M d, Y" }} at {{ report.time|time:"g:i A" }}</small>
+                        </div>
+                        <p class="mb-1">{{ report.report|truncatechars:150 }}</p>
+                        <small class="text-muted">Reported by: {{ report.employee.first_name }} {{ report.employee.last_name }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="list-group-item bg-transparent">
+                        <p class="text-center mb-0">No recent activity reports found for this client.</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block head %}
+<style>
+    /* Client tabs - make horizontally scrollable for all screen sizes */
+    .client-tabs-wrapper {
+        position: relative;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+        padding-bottom: 2px; /* Allow space for the scrollbar */
+    }
+
+    /* Custom scrollbar styling */
+    .client-tabs-wrapper::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .client-tabs-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+
+    .client-tabs-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }
+
+    .client-tabs-wrapper::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Tab styling */
+    .client-tabs {
+        white-space: nowrap;
+        flex-wrap: nowrap;
+        min-width: max-content;
+        padding-bottom: 1px; /* Slight padding to avoid overlap with border */
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Mobile view selector
+        const mobileViewSelector = document.getElementById('mobileViewSelector');
+        if (mobileViewSelector) {
+            mobileViewSelector.addEventListener('change', function() {
+                window.location.href = this.value;
+            });
+        }
+        
+        // Handle horizontal scrolling for tabs
+        const tabsWrapper = document.querySelector('.client-tabs-wrapper');
+        if (tabsWrapper) {
+            // Add keyboard navigation for accessibility
+            tabsWrapper.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight') {
+                    tabsWrapper.scrollLeft += 100;
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft') {
+                    tabsWrapper.scrollLeft -= 100;
+                    e.preventDefault();
+                }
+            });
+            
+            // Make tab wrapper focusable for keyboard navigation
+            tabsWrapper.setAttribute('tabindex', '0');
+        }
+    });
+</script>
 {% endblock %}

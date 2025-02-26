@@ -1,7 +1,146 @@
 {% extends 'sess_admin_portal/base.html' %}
 {% block content %}
-<h1 class="text-center main-header">Sierra Environmental and Social Services Admin Portal</h1>
-  <p class="text-center">Welcome <Employee Name>.</p>
-  <p class="text-center">This portal is designed to help you manage your work with ease! 🚀. Please use the navigation bar above to access the various tools available to you.</p>
-{% endblock %}
 
+<!-- Page Header -->
+<div class="page-header">
+    <h2 class="mb-3">Dashboard</h2>
+    <p class="text-muted">Welcome to Sierra Environmental and Social Services Inc. Admin Portal</p>
+</div>
+
+<!-- Stats Overview -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3 mb-md-0">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="stats-icon bg-primary rounded-circle">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="ms-3">
+                    <h6 class="card-subtitle text-muted mb-1">Active Clients</h6>
+                    <h3 class="card-title mb-0">248</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3 mb-md-0">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="stats-icon bg-success rounded-circle">
+                    <i class="bi bi-calendar2-check"></i>
+                </div>
+                <div class="ms-3">
+                    <h6 class="card-subtitle text-muted mb-1">Appointments Today</h6>
+                    <h3 class="card-title mb-0">32</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="stats-icon bg-warning rounded-circle">
+                    <i class="bi bi-clipboard2-check"></i>
+                </div>
+                <div class="ms-3">
+                    <h6 class="card-subtitle text-muted mb-1">Pending Tasks</h6>
+                    <h3 class="card-title mb-0">17</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Section -->
+<div class="section-header mb-3">
+    <h4>Quick Actions</h4>
+</div>
+
+<div class="row g-4">
+    <!-- Client Management -->
+    <div class="col-sm-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="feature-icon mb-3 bg-primary text-white rounded-circle">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h5 class="card-title">Client Management</h5>
+                <p class="card-text flex-grow-1">Access and manage client information seamlessly with comprehensive profiles and history tracking.</p>
+                <a href="{% url 'client_management' %}" class="btn btn-primary mt-2">Go to Clients</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timesheet Submission -->
+    <div class="col-sm-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="feature-icon mb-3 bg-success text-white rounded-circle">
+                    <i class="bi bi-clock"></i>
+                </div>
+                <h5 class="card-title">Timesheet Submission</h5>
+                <p class="card-text flex-grow-1">Easily track and submit your work hours with our streamlined timesheet management system.</p>
+                <a href="{% url 'timesheet_management' %}" class="btn btn-success mt-2">Submit Timesheet</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- PTO Management -->
+    <div class="col-sm-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="feature-icon mb-3 bg-warning text-dark rounded-circle">
+                    <i class="bi bi-calendar-minus"></i>
+                </div>
+                <h5 class="card-title">PTO Management</h5>
+                <p class="card-text flex-grow-1">Request and track Paid Time Off (PTO) with our calendar integration and approval workflow.</p>
+                <a href="#" class="btn btn-warning mt-2">Manage PTO</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="section-header mt-5 mb-3">
+    <h4>Recent Activities</h4>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-transparent">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Timesheet Submitted</h6>
+                        <p class="mb-0 text-muted small">You submitted your timesheet for the period ending Feb 18, 2025</p>
+                    </div>
+                    <span class="badge bg-success rounded-pill">Today</span>
+                </div>
+            </div>
+            <div class="list-group-item bg-transparent">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">New Client Added</h6>
+                        <p class="mb-0 text-muted small">Client profile for John Smith was created</p>
+                    </div>
+                    <span class="badge bg-secondary rounded-pill">Yesterday</span>
+                </div>
+            </div>
+            <div class="list-group-item bg-transparent">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">PTO Request Approved</h6>
+                        <p class="mb-0 text-muted small">Your time off request for Mar 12-15 was approved</p>
+                    </div>
+                    <span class="badge bg-secondary rounded-pill">Feb 20</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer text-center bg-transparent">
+        <a href="#" class="btn btn-sm btn-outline-primary">View All Activity</a>
+    </div>
+</div>
+
+{% endblock %}
