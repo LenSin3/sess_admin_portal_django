@@ -1,46 +1,231 @@
 {% extends 'sess_admin_portal/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">Timesheet Summary for Pay Period: {{ start_date }} to {{ end_date }}</h2>
-  <p><strong>Debug Total Hours:</strong> {{ total_hours }}</p>  {# This helps confirm if total_hours is being passed #}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Timesheet Summary</h2>
+        <p class="text-muted mb-0">View and manage your timesheet submissions</p>
+    </div>
+    <div>
+        <a href="{% url 'timesheet_management' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Submit Timesheet
+        </a>
+    </div>
+</div>
 
-  {% if submission %}
-    <table class="table table-bordered table-striped">
-      <thead class="thead-dark">
-        <tr>
-          <th>Pay Period</th>
-          <th>Total Hours</th>
-          <th>Submission Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>{{ start_date }} to {{ end_date }}</td>
-          <td>{{ total_hours }}</td>
-          <td>
-            {% if submission.status == 'Pending' %}
-              <span class="badge badge-warning">Pending</span>
-            {% elif submission.status == 'Approved' %}
-              <span class="badge badge-success">Approved</span>
-            {% elif submission.status == 'Rejected' %}
-              <span class="badge badge-danger">Rejected</span>
-            {% else %}
-              <span class="badge badge-secondary">{{ submission.status }}</span>
-            {% endif %}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <!-- Optionally, show an edit/resubmit link only if the status is Pending or Rejected -->
-    {% if submission.status == 'Pending' or submission.status == 'Rejected' %}
-  <a href="{% url 'edit_timesheet' submission.id %}" class="btn btn-warning">Edit/Resubmit Timesheet</a>
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
 {% endif %}
 
-  {% else %}
-    <div class="alert alert-warning" role="alert">
-      You have not submitted a timesheet for the current pay period.
+<!-- Current Pay Period Card -->
+<div class="card mb-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Current Pay Period ({{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }})</h5>
     </div>
-  {% endif %}
+    <div class="card-body">
+        {% if submission %}
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <div class="status-icon rounded-circle me-3 
+                            {% if submission.status == 'Pending' %}bg-warning
+                            {% elif submission.status == 'Approved' %}bg-success
+                            {% elif submission.status == 'Rejected' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            <i class="bi 
+                                {% if submission.status == 'Pending' %}bi-hourglass-split
+                                {% elif submission.status == 'Approved' %}bi-check-lg
+                                {% elif submission.status == 'Rejected' %}bi-x-lg
+                                {% else %}bi-question-lg{% endif %}">
+                            </i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Status</h6>
+                            <div class="fw-medium 
+                                {% if submission.status == 'Pending' %}text-warning
+                                {% elif submission.status == 'Approved' %}text-success
+                                {% elif submission.status == 'Rejected' %}text-danger
+                                {% else %}text-secondary{% endif %}">
+                                {{ submission.status }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <div class="status-icon rounded-circle bg-primary me-3">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Total Hours</h6>
+                            <div class="fw-medium">{{ total_hours|floatformat:1 }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <div class="status-icon rounded-circle bg-info me-3">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Submitted On</h6>
+                            <div class="fw-medium">{{ submission.submitted_at|date:"M d, Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h6 class="mb-3">Timesheet Details</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for timesheet in submission.timesheets.all %}
+                            <tr>
+                                <td>{{ timesheet.date|date:"D, M d, Y" }}</td>
+                                <td>{{ timesheet.time_in|time:"g:i A" }}</td>
+                                <td>{{ timesheet.time_out|time:"g:i A" }}</td>
+                                <td>{{ timesheet.total_hours|floatformat:1 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No timesheet entries found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            {% if submission.status == 'Pending' or submission.status == 'Rejected' %}
+            <div class="d-flex mt-4">
+                <a href="{% url 'edit_timesheet' submission.id %}" class="btn btn-warning me-2">
+                    <i class="bi bi-pencil me-1"></i> Edit Timesheet
+                </a>
+                
+                {% if submission.status == 'Rejected' %}
+                <div class="alert alert-danger py-2 px-3 mb-0 ms-3 d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span>Your timesheet was rejected. Please review and resubmit.</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-x fs-1 text-muted"></i>
+                <h6 class="mt-3 mb-2">No Timesheet Submitted</h6>
+                <p class="text-muted mb-4">You have not submitted a timesheet for the current pay period.</p>
+                <a href="{% url 'timesheet_management' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Submit Timesheet
+                </a>
+            </div>
+        {% endif %}
+    </div>
 </div>
+
+<!-- Timesheet History -->
+<div class="card">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Timesheet History</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if previous_submissions %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Pay Period</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                            <th>Submitted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prev_sub in previous_submissions %}
+                        <tr>
+                            <td>{{ prev_sub.start_date|date:"M d" }} - {{ prev_sub.end_date|date:"M d, Y" }}</td>
+                            <td>{{ prev_sub.total_hours|floatformat:1 }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if prev_sub.status == 'Pending' %}bg-warning
+                                    {% elif prev_sub.status == 'Approved' %}bg-success
+                                    {% elif prev_sub.status == 'Rejected' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ prev_sub.status }}
+                                </span>
+                            </td>
+                            <td>{{ prev_sub.submitted_at|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-outline-secondary">View</a>
+                                {% if prev_sub.status == 'Pending' or prev_sub.status == 'Rejected' %}
+                                <a href="{% url 'edit_timesheet' prev_sub.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <p class="mb-0">No previous timesheet submissions found.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if user.is_staff or user.is_superuser %}
+<!-- Admin Section -->
+<div class="card mt-4">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Admin Actions</h5>
+        <span class="badge bg-danger">Admin Only</span>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            As an administrator, you can approve or reject timesheet submissions from employees.
+        </div>
+        
+        <a href="#" class="btn btn-primary">
+            <i class="bi bi-list-check me-1"></i> Manage All Timesheets
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block head %}
+<style>
+    .status-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+</style>
 {% endblock %}

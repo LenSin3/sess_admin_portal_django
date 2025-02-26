@@ -38,6 +38,19 @@ from django.utils import timezone
 # Timesheet
 # PTO
 
+class ProfilePicture(models.Model):
+    """Model for storing profile pictures for employees and clients"""
+    image = models.ImageField(upload_to='profile_pics/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    # Generic relation to work with both Employee and Client models
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    def __str__(self):
+        return f"Profile picture for {self.content_object}"
+
 
 
 
@@ -91,6 +104,18 @@ class Client(models.Model):
     onboarding_date = models.DateField()
     offboarding_date = models.DateField(null=True, blank=True)
     active = models.BooleanField()
+    
+    @property
+    def profile_picture(self):
+        """Get the client's profile picture if it exists"""
+        from django.apps import apps
+        ProfilePicture = apps.get_model('sess_admin_portal', 'ProfilePicture')
+        
+        content_type = ContentType.objects.get_for_model(self.__class__)
+        return ProfilePicture.objects.filter(
+            content_type=content_type,
+            object_id=self.id
+        ).first()
     
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -199,6 +224,18 @@ class Employee(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     role = models.CharField(max_length=100)
     
+    @property
+    def profile_picture(self):
+        """Get the employee's profile picture if it exists"""
+        from django.apps import apps
+        ProfilePicture = apps.get_model('sess_admin_portal', 'ProfilePicture')
+        
+        content_type = ContentType.objects.get_for_model(self.__class__)
+        return ProfilePicture.objects.filter(
+            content_type=content_type,
+            object_id=self.id
+        ).first()
+    
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
     @property
@@ -283,10 +320,20 @@ class Timesheet(models.Model):
         Returns the total hours worked, calculated as the difference between time_out and time_in in hours.
         """
         if self.time_in and self.time_out:
+            # Convert string times to datetime objects for calculation
             time_in_dt = datetime.combine(self.date, self.time_in)
             time_out_dt = datetime.combine(self.date, self.time_out)
+            
+            # Calculate the difference
             delta = time_out_dt - time_in_dt
-            return round(delta.total_seconds() / 3600.0, 2)  # Convert seconds to hours and round to 2 decimal places
+            
+            # Check for negative time (if time_out is before time_in)
+            if delta.total_seconds() < 0:
+                return 0
+                
+            # Convert to hours and round to 1 decimal place
+            hours = round(delta.total_seconds() / 3600.0, 1)
+            return hours
         return 0
 
     def __str__(self):

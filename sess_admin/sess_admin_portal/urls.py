@@ -19,4 +19,11 @@ urlpatterns = [
     
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    
+    # Profile and settings
+    path('profile/', views.profile, name='profile'),
+    path('settings/', views.settings, name='settings'),
+    
+    # Admin analytics
+    path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
 ]

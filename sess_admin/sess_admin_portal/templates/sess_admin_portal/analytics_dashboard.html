@@ -1,0 +1,310 @@
+{% extends 'sess_admin_portal/base.html' %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h2 class="mb-1">Admin Analytics Dashboard</h2>
+        <p class="text-muted mb-0">Overview of system-wide statistics and metrics</p>
+    </div>
+    <div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary active">Last 30 Days</button>
+            <button type="button" class="btn btn-outline-primary">Quarter</button>
+            <button type="button" class="btn btn-outline-primary">Year</button>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row mb-4 mt-4">
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <h6 class="text-white-50 mb-2">Total Clients</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="display-5 mb-0">{{ total_clients }}</h3>
+                    <i class="bi bi-people-fill fs-1"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="badge bg-dark">{{ active_clients }} Active</span>
+                    <span class="badge bg-secondary ms-1">{{ inactive_clients }} Inactive</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <h6 class="text-white-50 mb-2">Total Employees</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="display-5 mb-0">{{ total_employees }}</h3>
+                    <i class="bi bi-person-badge-fill fs-1"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="badge bg-dark">{{ active_employees }} Active</span>
+                    <span class="badge bg-secondary ms-1">{{ employee_roles|length }} Roles</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <h6 class="text-white-50 mb-2">Reports This Month</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="display-5 mb-0">{{ reports_this_month }}</h3>
+                    <i class="bi bi-journal-text fs-1"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="badge bg-dark">{{ reports_per_day }} Per Day</span>
+                    <span class="badge bg-secondary ms-1">{{ report_trend }}% from last month</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <h6 class="text-dark mb-2">Hours Logged</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="display-5 mb-0">{{ hours_logged }}</h3>
+                    <i class="bi bi-clock-history fs-1"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="badge bg-dark text-white">{{ avg_hours_per_employee }} Per Employee</span>
+                    <span class="badge bg-secondary ms-1 text-white">{{ total_timesheets }} Timesheets</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8 mb-4 mb-md-0">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <ul class="nav nav-tabs card-header-tabs" id="chartTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#clientActivity">Client Activity</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#employeeHours">Employee Hours</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#reportsByType">Reports By Type</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="clientActivity">
+                        <div class="chart-container" style="height: 300px;">
+                            <!-- Chart would be rendered here using a visualization library -->
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <div class="text-center">
+                                    <i class="bi bi-bar-chart-line fs-1 text-muted"></i>
+                                    <p class="mt-3 mb-0">Client Activity Chart</p>
+                                    <p class="text-muted small">Shows daily reports and appointments by client</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="employeeHours">
+                        <div class="chart-container" style="height: 300px;">
+                            <!-- Chart would be rendered here using a visualization library -->
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <div class="text-center">
+                                    <i class="bi bi-bar-chart-line fs-1 text-muted"></i>
+                                    <p class="mt-3 mb-0">Employee Hours Chart</p>
+                                    <p class="text-muted small">Shows hours logged by employee over time</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="reportsByType">
+                        <div class="chart-container" style="height: 300px;">
+                            <!-- Chart would be rendered here using a visualization library -->
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <div class="text-center">
+                                    <i class="bi bi-pie-chart fs-1 text-muted"></i>
+                                    <p class="mt-3 mb-0">Reports by Type Chart</p>
+                                    <p class="text-muted small">Shows distribution of report types</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Regional Centers</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for center in regional_centers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                        <div>
+                            <h6 class="mb-1">{{ center.name }}</h6>
+                            <p class="mb-0 text-muted small">{{ center.location }}</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="fs-5 mb-1">{{ center.client_count }}</div>
+                            <div class="text-muted small">Clients</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity and Timesheet Status -->
+<div class="row">
+    <div class="col-md-8 mb-4 mb-md-0">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Recent System Activity</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for activity in system_activities %}
+                    <div class="list-group-item bg-transparent">
+                        <div class="d-flex">
+                            <div class="activity-icon me-3 rounded-circle {{ activity.icon_class }}">
+                                <i class="bi {{ activity.icon }}"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ activity.title }}</h6>
+                                    <small class="text-muted">{{ activity.time }}</small>
+                                </div>
+                                <p class="mb-1">{{ activity.description }}</p>
+                                <small class="text-muted">{{ activity.user }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Current Pay Period Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between">
+                        <div>Pay Period</div>
+                        <div class="text-muted">{{ pay_period }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <div>Timesheets Due</div>
+                        <div class="text-muted">{{ timesheet_due_date }}</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <div>Timesheet Submission Rate</div>
+                        <div>{{ submission_rate }}%</div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ submission_rate }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <div>Pending Approvals</div>
+                        <div>{{ pending_approvals }}</div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ pending_percentage }}%"></div>
+                    </div>
+                </div>
+                
+                <h6 class="mt-4 mb-3">Employee Status</h6>
+                <div class="timesheet-status">
+                    <div class="d-flex justify-content-between mb-2">
+                        <div class="status-item">
+                            <div class="status-dot bg-success"></div>
+                            <div>Submitted</div>
+                        </div>
+                        <div>{{ submitted_count }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <div class="status-item">
+                            <div class="status-dot bg-warning"></div>
+                            <div>In Progress</div>
+                        </div>
+                        <div>{{ in_progress_count }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <div class="status-item">
+                            <div class="status-dot bg-danger"></div>
+                            <div>Not Started</div>
+                        </div>
+                        <div>{{ not_started_count }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .activity-icon.bg-primary-light {
+        background-color: rgba(13, 110, 253, 0.2);
+        color: var(--primary-color);
+    }
+    
+    .activity-icon.bg-success-light {
+        background-color: rgba(25, 135, 84, 0.2);
+        color: #198754;
+    }
+    
+    .activity-icon.bg-warning-light {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+    }
+    
+    .activity-icon.bg-info-light {
+        background-color: rgba(13, 202, 240, 0.2);
+        color: #0dcaf0;
+    }
+    
+    .status-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+</style>
+
+{% endblock %}

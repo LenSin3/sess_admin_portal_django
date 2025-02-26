@@ -1,40 +1,195 @@
-{% extends 'sess_admin_portal/base.html' %} 
+{% extends 'sess_admin_portal/base.html' %}
 {% load custom_filters %}
 
 {% block content %}
-  <div class="container mt-4">
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Timesheet Submission</h2>
+        <p class="text-muted mb-0">Pay Period: {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</p>
+    </div>
+    <div>
+        <a href="{% url 'timesheet' %}" class="btn btn-outline-primary">
+            <i class="bi bi-list-check me-1"></i> View Summary
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Enter Work Hours</h5>
+        <span class="badge bg-primary">{{ days|length }} Days</span>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="25%">Date</th>
+                            <th width="30%">Time In</th>
+                            <th width="30%">Time Out</th>
+                            <th width="15%">Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in days %}
+                        <tr class="timesheet-row {% if day.weekday == 5 or day.weekday == 6 %}table-secondary{% endif %}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="date-badge {% if day.weekday == 5 or day.weekday == 6 %}bg-secondary{% elif day == today %}bg-primary{% else %}bg-light text-dark{% endif %} me-2">
+                                        {{ day|date:"d" }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ day|date:"l" }}</div>
+                                        <div class="small text-muted">{{ day|date:"M Y" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <input type="time" name="time_in_{{ day|date:'Y-m-d' }}" class="form-control time-input" 
+                                    value="{% if timesheets|get_item:day %}{{ timesheets|get_item:day.time_in|time:'H:i'|default_if_none:'' }}{% endif %}"
+                                    oninput="calculateHours(this.parentNode.parentNode)">
+                            </td>
+                            <td>
+                                <input type="time" name="time_out_{{ day|date:'Y-m-d' }}" class="form-control time-input"
+                                    value="{% if timesheets|get_item:day %}{{ timesheets|get_item:day.time_out|time:'H:i'|default_if_none:'' }}{% endif %}"
+                                    oninput="calculateHours(this.parentNode.parentNode)">
+                            </td>
+                            <td>
+                                <span class="hours-display">-</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-dark">
+                            <td colspan="3" class="text-end fw-bold">Total Hours:</td>
+                            <td id="total-hours" class="fw-bold">0.0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'timesheet' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check2-circle me-1"></i> Submit Timesheet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Important Notes</h5>
+    </div>
+    <div class="card-body">
+        <ul class="mb-0">
+            <li>Enter hours for all days you worked during this pay period.</li>
+            <li>Weekend days are highlighted in gray.</li>
+            <li>Time must be entered in 24-hour format (e.g., 09:00 for 9 AM, 17:00 for 5 PM).</li>
+            <li>Your timesheet will be reviewed by a supervisor before approval.</li>
+            <li>You can edit your submission until it is approved.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+    .date-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+    }
     
-    <form method="post">
-      {% csrf_token %}
-      <h3>Timesheet for Pay Period: {{ start_date }} to {{ end_date }}</h3>
-  
-      <table class="table table-bordered">
-        <thead class="thead-dark">
-            <tr>
-                <th>Date</th>
-                <th>Time In</th>
-                <th>Time Out</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for day in days %}
-                <tr>
-                    <td>{{ day }}</td>
-                    <td>
-                        <input type="time" name="time_in_{{ day }}" class="form-control"
-                               value="{% if timesheets|get_item:day %}{{ timesheets|get_item:day.time_in|default_if_none:'' }}{% endif %}">
-                    </td>
-                    <td>
-                        <input type="time" name="time_out_{{ day }}" class="form-control"
-                               value="{% if timesheets|get_item:day %}{{ timesheets|get_item:day.time_out|default_if_none:'' }}{% endif %}">
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-  
-      <button type="submit" class="btn btn-primary">Submit Timesheet</button>
-  </form>
-  
-  </div>
+    .timesheet-row:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .time-input {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-color);
+    }
+    
+    .time-input:focus {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary-color);
+        color: var(--text-color);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize hours calculation for all rows
+        document.querySelectorAll('.timesheet-row').forEach(function(row) {
+            calculateHours(row);
+        });
+    });
+    
+    function calculateHours(row) {
+        const timeInInput = row.querySelector('input[name^="time_in_"]');
+        const timeOutInput = row.querySelector('input[name^="time_out_"]');
+        const hoursDisplay = row.querySelector('.hours-display');
+        
+        if (timeInInput.value && timeOutInput.value) {
+            // Convert time strings to Date objects for calculation
+            const timeIn = new Date('1970-01-01T' + timeInInput.value + 'Z');
+            const timeOut = new Date('1970-01-01T' + timeOutInput.value + 'Z');
+            
+            // Calculate hours difference
+            let hoursDiff = (timeOut - timeIn) / 1000 / 60 / 60;
+            
+            // Ensure positive value (in case time_out is before time_in)
+            if (hoursDiff < 0) {
+                hoursDiff = 0;
+                hoursDisplay.classList.add('text-danger');
+            } else {
+                hoursDisplay.classList.remove('text-danger');
+            }
+            
+            // Display the hours
+            hoursDisplay.textContent = hoursDiff.toFixed(1);
+        } else {
+            hoursDisplay.textContent = '-';
+        }
+        
+        // Update total hours
+        updateTotalHours();
+    }
+    
+    function updateTotalHours() {
+        const hoursDisplays = document.querySelectorAll('.hours-display');
+        let totalHours = 0;
+        
+        hoursDisplays.forEach(function(display) {
+            if (display.textContent !== '-') {
+                totalHours += parseFloat(display.textContent);
+            }
+        });
+        
+        document.getElementById('total-hours').textContent = totalHours.toFixed(1);
+    }
+</script>
 {% endblock %}
