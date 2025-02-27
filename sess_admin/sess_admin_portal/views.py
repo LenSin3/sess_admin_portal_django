@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import update_session_auth_hash
+from django.urls import reverse
 from django.contrib.auth.models import User
 from django.db.models import Count, Sum, Avg, Q
 from django.contrib.contenttypes.models import ContentType
@@ -400,7 +401,7 @@ def manage_announcements(request):
     if not show_expired:
         today = timezone.now().date()
         announcements = announcements.filter(
-            models.Q(expiry_date__isnull=True) | models.Q(expiry_date__gte=today)
+            Q(expiry_date__isnull=True) | Q(expiry_date__gte=today)
         )
     
     context = {
@@ -931,7 +932,8 @@ def add_daily_report(request, client_id):
                 client=client,
                 employee=employee
             )
-            return redirect('client_management') + '?view=activity-report'
+            # Fix: Use reverse to get URL, then add query string
+            return redirect(reverse('client_management') + '?view=activity-report')
         
     # Default - show form
     context = {
@@ -949,7 +951,8 @@ def edit_daily_report(request, report_id):
     
     # Ensure this employee created the report
     if report.employee.id != employee.id:
-        return redirect('client_management') + '?view=activity-report'
+        # Fix: Use reverse with query string
+        return redirect(reverse('client_management') + '?view=activity-report')
     
     if request.method == 'POST':
         # Process form submission
@@ -963,7 +966,8 @@ def edit_daily_report(request, report_id):
             report.time = time
             report.report = report_text
             report.save()
-            return redirect('client_management') + '?view=activity-report'
+            # Fix: Use reverse with query string
+            return redirect(reverse('client_management') + '?view=activity-report')
     
     # Default - show form with existing data
     context = {
@@ -999,7 +1003,8 @@ def delete_daily_report(request, report_id):
     if report.employee.id == employee.id:
         report.delete()
     
-    return redirect('client_management') + '?view=activity-report'
+    # Fix: Use reverse with query string
+    return redirect(reverse('client_management') + '?view=activity-report')
 
 @login_required
 def client_medical_history(request):

@@ -35,7 +35,7 @@ urlpatterns = [
     path('announcements/<int:announcement_id>/view/', views.view_announcement, name='view_announcement'),
     
     # Admin timesheet management
-    path('admin/timesheets/', views.admin_timesheets, name='admin_timesheets'),
-    path('admin/approve_timesheet/<int:submission_id>/', views.approve_timesheet, name='approve_timesheet'),
-    path('admin/reject_timesheet/<int:submission_id>/', views.reject_timesheet, name='reject_timesheet'),
+    path('timesheets/', views.admin_timesheets, name='admin_timesheets'),
+    path('approve_timesheet/<int:submission_id>/', views.approve_timesheet, name='approve_timesheet'),
+    path('reject_timesheet/<int:submission_id>/', views.reject_timesheet, name='reject_timesheet'),
 ]
