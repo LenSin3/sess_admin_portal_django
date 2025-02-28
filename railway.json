@@ -1,0 +1,11 @@
+{
+    "build": {
+      "builder": "nixpacks",
+      "buildCommand": "cd sess_admin && pip install -r requirements.txt"
+    },
+    "deploy": {
+      "startCommand": "cd sess_admin && python manage.py migrate && gunicorn sess_admin.wsgi",
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
+    }
+  }
