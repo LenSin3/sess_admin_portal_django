@@ -1,0 +1,796 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Create {{ report_type_display }}</h2>
+        <p class="text-muted mb-0">Submit a new report for {{ client.first_name }} {{ client.last_name }}</p>
+    </div>
+    <div>
+        <a href="{% url 'client_reports' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Report Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'create_report' report_type %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Report Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               placeholder="Enter report title"
+                               value="{{ title|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="report_date" class="form-label">Report Date</label>
+                        <input type="date" class="form-control" id="report_date" name="report_date" required
+                               value="{{ report_date|default:today }}">
+                    </div>
+                    
+                    <!-- Dynamic form fields based on report type -->
+                    {% if report_type == "Incident Report" %}
+                    <div class="report-section mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Incident Details</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="incident_date" class="form-label">Incident Date</label>
+                                <input type="date" class="form-control" id="incident_date" name="incident_date" required
+                                       value="{{ form_data.incident_date|default:today }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="incident_time" class="form-label">Incident Time</label>
+                                <input type="time" class="form-control" id="incident_time" name="incident_time" required
+                                       value="{{ form_data.incident_time|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="incident_location" class="form-label">Incident Location</label>
+                            <input type="text" class="form-control" id="incident_location" name="incident_location" required
+                                   placeholder="Where did the incident occur?"
+                                   value="{{ form_data.incident_location|default:'' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description of Incident</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required
+                                      placeholder="Provide a detailed description of what happened...">{{ form_data.description|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="immediate_action" class="form-label">Immediate Action Taken</label>
+                            <textarea class="form-control" id="immediate_action" name="immediate_action" rows="3" required
+                                      placeholder="Describe actions taken immediately after the incident...">{{ form_data.immediate_action|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="medical_attention" name="medical_attention"
+                                       {% if form_data.medical_attention %}checked{% endif %}>
+                                <label class="form-check-label" for="medical_attention">
+                                    Medical attention was required
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="medical_details_section" {% if not form_data.medical_attention %}style="display: none;"{% endif %}>
+                            <label for="medical_attention_details" class="form-label">Medical Attention Details</label>
+                            <textarea class="form-control" id="medical_attention_details" name="medical_attention_details" rows="3"
+                                      placeholder="Describe the medical attention provided...">{{ form_data.medical_attention_details|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="witnesses" class="form-label">Witnesses (if any)</label>
+                            <textarea class="form-control" id="witnesses" name="witnesses" rows="2"
+                                      placeholder="List any witnesses to the incident...">{{ form_data.witnesses|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="follow_up_required" name="follow_up_required"
+                                       {% if form_data.follow_up_required %}checked{% endif %}>
+                                <label class="form-check-label" for="follow_up_required">
+                                    Follow-up action is required
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="follow_up_section" {% if not form_data.follow_up_required %}style="display: none;"{% endif %}>
+                            <label for="follow_up_details" class="form-label">Follow-up Details</label>
+                            <textarea class="form-control" id="follow_up_details" name="follow_up_details" rows="3"
+                                      placeholder="Describe required follow-up actions...">{{ form_data.follow_up_details|default:'' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    {% elif report_type == "Sleep Log" %}
+                    <div class="report-section mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Sleep Log Details</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="sleep_time" class="form-label">Sleep Time</label>
+                                <input type="time" class="form-control" id="sleep_time" name="sleep_time" required
+                                       value="{{ form_data.sleep_time|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="wake_time" class="form-label">Wake Time</label>
+                                <input type="time" class="form-control" id="wake_time" name="wake_time" required
+                                       value="{{ form_data.wake_time|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="total_sleep" class="form-label">Total Sleep (hours)</label>
+                            <input type="number" step="0.5" class="form-control" id="total_sleep" name="total_sleep" required
+                                   placeholder="Total hours of sleep"
+                                   value="{{ form_data.total_sleep|default:'' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sleep_quality" class="form-label">Sleep Quality</label>
+                            <select class="form-select" id="sleep_quality" name="sleep_quality" required>
+                                <option value="" {% if not form_data.sleep_quality %}selected{% endif %} disabled>Select sleep quality</option>
+                                <option value="Excellent" {% if form_data.sleep_quality == 'Excellent' %}selected{% endif %}>Excellent</option>
+                                <option value="Good" {% if form_data.sleep_quality == 'Good' %}selected{% endif %}>Good</option>
+                                <option value="Fair" {% if form_data.sleep_quality == 'Fair' %}selected{% endif %}>Fair</option>
+                                <option value="Poor" {% if form_data.sleep_quality == 'Poor' %}selected{% endif %}>Poor</option>
+                                <option value="Very Poor" {% if form_data.sleep_quality == 'Very Poor' %}selected{% endif %}>Very Poor</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="interruptions" class="form-label">Sleep Interruptions</label>
+                            <textarea class="form-control" id="interruptions" name="interruptions" rows="2"
+                                      placeholder="Describe any interruptions to sleep...">{{ form_data.interruptions|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sleep_aid_used" name="sleep_aid_used"
+                                       {% if form_data.sleep_aid_used %}checked{% endif %}>
+                                <label class="form-check-label" for="sleep_aid_used">
+                                    Sleep aid was used
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="sleep_aid_section" {% if not form_data.sleep_aid_used %}style="display: none;"{% endif %}>
+                            <label for="sleep_aid_details" class="form-label">Sleep Aid Details</label>
+                            <textarea class="form-control" id="sleep_aid_details" name="sleep_aid_details" rows="2"
+                                      placeholder="Describe the sleep aid used...">{{ form_data.sleep_aid_details|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sleep_notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="sleep_notes" name="sleep_notes" rows="3"
+                                      placeholder="Any additional observations or notes...">{{ form_data.notes|default:'' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    {% elif report_type == "Individual Support Plan" or report_type == "Annual Support Plan Report" %}
+                    <div class="report-section mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Support Plan Details</h5>
+                        
+                        <div class="mb-3">
+                            <label for="strengths" class="form-label">Client Strengths</label>
+                            <textarea class="form-control" id="strengths" name="strengths" rows="3" required
+                                      placeholder="Describe client's strengths and abilities...">{{ form_data.strengths|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="challenges" class="form-label">Client Challenges</label>
+                            <textarea class="form-control" id="challenges" name="challenges" rows="3" required
+                                      placeholder="Describe challenges faced by the client...">{{ form_data.challenges|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="support_needs" class="form-label">Support Needs</label>
+                            <textarea class="form-control" id="support_needs" name="support_needs" rows="3" required
+                                      placeholder="Describe specific support needs...">{{ form_data.support_needs|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="health_considerations" class="form-label">Health Considerations</label>
+                            <textarea class="form-control" id="health_considerations" name="health_considerations" rows="3" required
+                                      placeholder="Describe health needs and considerations...">{{ form_data.health_considerations|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="living_situation" class="form-label">Living Situation</label>
+                            <textarea class="form-control" id="living_situation" name="living_situation" rows="2" required
+                                      placeholder="Describe current living arrangements...">{{ form_data.living_situation|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="community_involvement" class="form-label">Community Involvement</label>
+                            <textarea class="form-control" id="community_involvement" name="community_involvement" rows="2" required
+                                      placeholder="Describe community participation and involvement...">{{ form_data.community_involvement|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="education_employment" class="form-label">Education/Employment</label>
+                            <textarea class="form-control" id="education_employment" name="education_employment" rows="2" required
+                                      placeholder="Describe education or employment status...">{{ form_data.education_employment|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="social_relationships" class="form-label">Social Relationships</label>
+                            <textarea class="form-control" id="social_relationships" name="social_relationships" rows="2" required
+                                      placeholder="Describe social connections and relationships...">{{ form_data.social_relationships|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="transportation" class="form-label">Transportation</label>
+                            <textarea class="form-control" id="transportation" name="transportation" rows="2" required
+                                      placeholder="Describe transportation needs and arrangements...">{{ form_data.transportation|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="financial" class="form-label">Financial</label>
+                            <textarea class="form-control" id="financial" name="financial" rows="2" required
+                                      placeholder="Describe financial status and support...">{{ form_data.financial|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="cultural_considerations" class="form-label">Cultural Considerations</label>
+                            <textarea class="form-control" id="cultural_considerations" name="cultural_considerations" rows="2" required
+                                      placeholder="Describe any cultural considerations...">{{ form_data.cultural_considerations|default:'' }}</textarea>
+                        </div>
+                        
+                        <h6 class="mt-4 mb-3">Goals and Objectives</h6>
+                        <div id="goals-container">
+                            {% if form_data.goals %}
+                                {% for goal in form_data.goals %}
+                                <div class="goal-item border rounded p-3 mb-3">
+                                    <div class="mb-2">
+                                        <label class="form-label">Goal {{ forloop.counter }}</label>
+                                        <input type="text" class="form-control" name="goal_{{ forloop.counter }}" 
+                                               placeholder="Describe the goal..."
+                                               value="{{ goal.goal }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Strategies</label>
+                                        <textarea class="form-control" name="strategies_{{ forloop.counter }}" rows="2"
+                                                  placeholder="Describe strategies to achieve this goal...">{{ goal.strategies }}</textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Timeline</label>
+                                            <input type="text" class="form-control" name="timeline_{{ forloop.counter }}"
+                                                   placeholder="Expected timeline..."
+                                                   value="{{ goal.timeline }}">
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Progress Indicators</label>
+                                            <input type="text" class="form-control" name="progress_indicators_{{ forloop.counter }}"
+                                                   placeholder="How progress will be measured..."
+                                                   value="{{ goal.progress_indicators }}">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-goal">
+                                        <i class="bi bi-trash"></i> Remove Goal
+                                    </button>
+                                </div>
+                                {% endfor %}
+                                <input type="hidden" id="goal_count" name="goal_count" value="{{ form_data.goals|length }}">
+                            {% else %}
+                                <div class="goal-item border rounded p-3 mb-3">
+                                    <div class="mb-2">
+                                        <label class="form-label">Goal 1</label>
+                                        <input type="text" class="form-control" name="goal_1" 
+                                               placeholder="Describe the goal..." required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Strategies</label>
+                                        <textarea class="form-control" name="strategies_1" rows="2"
+                                                  placeholder="Describe strategies to achieve this goal..."></textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Timeline</label>
+                                            <input type="text" class="form-control" name="timeline_1"
+                                                   placeholder="Expected timeline...">
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Progress Indicators</label>
+                                            <input type="text" class="form-control" name="progress_indicators_1"
+                                                   placeholder="How progress will be measured...">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-goal">
+                                        <i class="bi bi-trash"></i> Remove Goal
+                                    </button>
+                                </div>
+                                <input type="hidden" id="goal_count" name="goal_count" value="1">
+                            {% endif %}
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-success" id="add-goal">
+                            <i class="bi bi-plus-circle"></i> Add Another Goal
+                        </button>
+                    </div>
+                    
+                    {% elif report_type == "Quarterly Progress Report" %}
+                    <div class="report-section mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Quarterly Progress Details</h5>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="quarter" class="form-label">Quarter</label>
+                                <select class="form-select" id="quarter" name="quarter" required>
+                                    <option value="" {% if not form_data.quarter %}selected{% endif %} disabled>Select quarter</option>
+                                    <option value="Q1" {% if form_data.quarter == 'Q1' %}selected{% endif %}>Q1 (Jan-Mar)</option>
+                                    <option value="Q2" {% if form_data.quarter == 'Q2' %}selected{% endif %}>Q2 (Apr-Jun)</option>
+                                    <option value="Q3" {% if form_data.quarter == 'Q3' %}selected{% endif %}>Q3 (Jul-Sep)</option>
+                                    <option value="Q4" {% if form_data.quarter == 'Q4' %}selected{% endif %}>Q4 (Oct-Dec)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="year" class="form-label">Year</label>
+                                <input type="number" class="form-control" id="year" name="year" min="2020" max="2100" required
+                                       value="{{ form_data.year|default:2025 }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="goals_progress" class="form-label">Progress on Goals</label>
+                            <textarea class="form-control" id="goals_progress" name="goals_progress" rows="4" required
+                                      placeholder="Describe progress made toward established goals...">{{ form_data.goals_progress|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="skills_development" class="form-label">Skills Development</label>
+                            <textarea class="form-control" id="skills_development" name="skills_development" rows="3" required
+                                      placeholder="Describe development in client's skills...">{{ form_data.skills_development|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="health_status" class="form-label">Health Status</label>
+                            <textarea class="form-control" id="health_status" name="health_status" rows="3" required
+                                      placeholder="Describe client's current health status...">{{ form_data.health_status|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="behavioral_observations" class="form-label">Behavioral Observations</label>
+                            <textarea class="form-control" id="behavioral_observations" name="behavioral_observations" rows="3" required
+                                      placeholder="Describe any notable behavioral patterns or changes...">{{ form_data.behavioral_observations|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="social_interactions" class="form-label">Social Interactions</label>
+                            <textarea class="form-control" id="social_interactions" name="social_interactions" rows="3" required
+                                      placeholder="Describe client's social interactions and relationships...">{{ form_data.social_interactions|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="community_involvement" class="form-label">Community Involvement</label>
+                            <textarea class="form-control" id="community_involvement" name="community_involvement" rows="3" required
+                                      placeholder="Describe client's involvement in community activities...">{{ form_data.community_involvement|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="challenges" class="form-label">Challenges</label>
+                            <textarea class="form-control" id="challenges" name="challenges" rows="3" required
+                                      placeholder="Describe challenges faced during this quarter...">{{ form_data.challenges|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="successes" class="form-label">Successes</label>
+                            <textarea class="form-control" id="successes" name="successes" rows="3" required
+                                      placeholder="Describe notable successes during this quarter...">{{ form_data.successes|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="recommendations" class="form-label">Recommendations</label>
+                            <textarea class="form-control" id="recommendations" name="recommendations" rows="3" required
+                                      placeholder="Provide recommendations for the next quarter...">{{ form_data.recommendations|default:'' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    {% elif report_type == "Medical Visit Summary" %}
+                    <div class="report-section mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Medical Visit Details</h5>
+                        
+                        <div class="mb-3">
+                            <label for="visit_date" class="form-label">Visit Date</label>
+                            <input type="date" class="form-control" id="visit_date" name="visit_date" required
+                                   value="{{ form_data.visit_date|default:today }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="provider_name" class="form-label">Provider Name</label>
+                            <input type="text" class="form-control" id="provider_name" name="provider_name" required
+                                   placeholder="Name of healthcare provider"
+                                   value="{{ form_data.provider_name|default:'' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="facility" class="form-label">Facility</label>
+                            <input type="text" class="form-control" id="facility" name="facility" required
+                                   placeholder="Name of healthcare facility"
+                                   value="{{ form_data.facility|default:'' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reason_for_visit" class="form-label">Reason for Visit</label>
+                            <textarea class="form-control" id="reason_for_visit" name="reason_for_visit" rows="2" required
+                                      placeholder="Why the visit was needed...">{{ form_data.reason_for_visit|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="diagnosis" class="form-label">Diagnosis</label>
+                            <textarea class="form-control" id="diagnosis" name="diagnosis" rows="2"
+                                      placeholder="Diagnosis provided by healthcare provider...">{{ form_data.diagnosis|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="treatment_plan" class="form-label">Treatment Plan</label>
+                            <textarea class="form-control" id="treatment_plan" name="treatment_plan" rows="3"
+                                      placeholder="Recommended treatment plan...">{{ form_data.treatment_plan|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="medications_prescribed" class="form-label">Medications Prescribed</label>
+                            <textarea class="form-control" id="medications_prescribed" name="medications_prescribed" rows="3"
+                                      placeholder="List any medications prescribed...">{{ form_data.medications_prescribed|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="follow_up_needed" name="follow_up_needed"
+                                       {% if form_data.follow_up_needed %}checked{% endif %}>
+                                <label class="form-check-label" for="follow_up_needed">
+                                    Follow-up visit is needed
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="follow_up_section" {% if not form_data.follow_up_needed %}style="display: none;"{% endif %}>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="follow_up_date" class="form-label">Follow-up Date</label>
+                                    <input type="date" class="form-control" id="follow_up_date" name="follow_up_date"
+                                           value="{{ form_data.follow_up_date|default:'' }}">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="follow_up_details" class="form-label">Follow-up Details</label>
+                                <textarea class="form-control" id="follow_up_details" name="follow_up_details" rows="2"
+                                          placeholder="Details about the follow-up appointment...">{{ form_data.follow_up_details|default:'' }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="medical_notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="medical_notes" name="medical_notes" rows="3"
+                                      placeholder="Any additional notes or observations...">{{ form_data.notes|default:'' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    {% elif report_type == "Initial Assessment" %}
+                    <div class="report-section mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Initial Assessment Details</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="assessment_date" class="form-label">Assessment Date</label>
+                                <input type="date" class="form-control" id="assessment_date" name="assessment_date" required
+                                       value="{{ form_data.assessment_date|default:today }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="assessor_name" class="form-label">Assessor Name</label>
+                                <input type="text" class="form-control" id="assessor_name" name="assessor_name" required
+                                       placeholder="Name of the assessor"
+                                       value="{{ form_data.assessor_name|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="presenting_issues" class="form-label">Presenting Issues</label>
+                            <textarea class="form-control" id="presenting_issues" name="presenting_issues" rows="3" required
+                                      placeholder="Describe the issues that led to this assessment...">{{ form_data.presenting_issues|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="medical_history" class="form-label">Medical History</label>
+                            <textarea class="form-control" id="medical_history" name="medical_history" rows="3" required
+                                      placeholder="Summarize relevant medical history...">{{ form_data.medical_history|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="family_history" class="form-label">Family History</label>
+                            <textarea class="form-control" id="family_history" name="family_history" rows="3" required
+                                      placeholder="Relevant family history...">{{ form_data.family_history|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="educational_history" class="form-label">Educational History</label>
+                            <textarea class="form-control" id="educational_history" name="educational_history" rows="3" required
+                                      placeholder="Summarize educational background...">{{ form_data.educational_history|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="employment_history" class="form-label">Employment History</label>
+                            <textarea class="form-control" id="employment_history" name="employment_history" rows="3"
+                                      placeholder="Summarize employment history if applicable...">{{ form_data.employment_history|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="social_history" class="form-label">Social History</label>
+                            <textarea class="form-control" id="social_history" name="social_history" rows="3" required
+                                      placeholder="Describe social relationships and support systems...">{{ form_data.social_history|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="assessment_strengths" class="form-label">Strengths</label>
+                            <textarea class="form-control" id="assessment_strengths" name="assessment_strengths" rows="3" required
+                                      placeholder="Describe client strengths...">{{ form_data.strengths|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="assessment_needs" class="form-label">Needs</label>
+                            <textarea class="form-control" id="assessment_needs" name="assessment_needs" rows="3" required
+                                      placeholder="Describe identified needs...">{{ form_data.needs|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="recommended_services" class="form-label">Recommended Services</label>
+                            <textarea class="form-control" id="recommended_services" name="recommended_services" rows="3" required
+                                      placeholder="Services recommended based on assessment...">{{ form_data.recommended_services|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="assessment_diagnosis" class="form-label">Diagnosis (if applicable)</label>
+                            <textarea class="form-control" id="assessment_diagnosis" name="assessment_diagnosis" rows="2"
+                                      placeholder="Any formal diagnosis...">{{ form_data.diagnosis|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="prognosis" class="form-label">Prognosis</label>
+                            <textarea class="form-control" id="prognosis" name="prognosis" rows="2" required
+                                      placeholder="Expected outcomes or prognosis...">{{ form_data.prognosis|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="assessment_notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="assessment_notes" name="assessment_notes" rows="3"
+                                      placeholder="Any additional notes or observations...">{{ form_data.notes|default:'' }}</textarea>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">General Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                                  placeholder="Additional notes about this report...">{{ notes|default:'' }}</textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" name="submit_action" value="draft" class="btn btn-secondary">
+                            <i class="bi bi-save me-1"></i> Save as Draft
+                        </button>
+                        <button type="submit" name="submit_action" value="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i> Submit for Approval
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Report Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 class="mb-2"><i class="bi bi-file-earmark-text me-2 text-primary"></i> {{ report_type_display }}</h6>
+                    <p>You're creating a {{ report_type_display }} for:</p>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-placeholder me-3">
+                            <i class="bi bi-person-circle fs-1"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ client.first_name }} {{ client.last_name }}</h6>
+                            <p class="text-muted mb-0">Client ID: {{ client.id }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h6 class="mb-2">Report Guidelines</h6>
+                    <ul class="mb-0">
+                        <li>Complete all required fields marked with *</li>
+                        <li>Be objective and factual in your documentation</li>
+                        <li>Include specific details and observations</li>
+                        <li>Use professional language throughout</li>
+                        <li>Review for accuracy before submission</li>
+                        <li>Save as draft if you need to continue later</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        {% if report_type == "Incident Report" %}
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Incident Reporting Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Report incidents as soon as possible</li>
+                    <li>Include exact times and locations</li>
+                    <li>Document all parties involved</li>
+                    <li>Be clear about immediate actions taken</li>
+                    <li>Note any witnesses present</li>
+                    <li>Document any injuries or property damage</li>
+                    <li>Include follow-up recommendations</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle sections based on checkboxes
+        const toggleSections = function() {
+            // Medical attention toggle (for Incident Report)
+            const medicalAttention = document.getElementById('medical_attention');
+            const medicalDetailsSection = document.getElementById('medical_details_section');
+            
+            if (medicalAttention && medicalDetailsSection) {
+                medicalAttention.addEventListener('change', function() {
+                    medicalDetailsSection.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+            
+            // Follow-up toggle (for Incident Report and Medical Visit)
+            const followUpRequired = document.getElementById('follow_up_required');
+            const followUpSection = document.getElementById('follow_up_section');
+            
+            if (followUpRequired && followUpSection) {
+                followUpRequired.addEventListener('change', function() {
+                    followUpSection.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+            
+            // Sleep aid toggle (for Sleep Log)
+            const sleepAidUsed = document.getElementById('sleep_aid_used');
+            const sleepAidSection = document.getElementById('sleep_aid_section');
+            
+            if (sleepAidUsed && sleepAidSection) {
+                sleepAidUsed.addEventListener('change', function() {
+                    sleepAidSection.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+            
+            // Follow-up needed toggle (for Medical Visit)
+            const followUpNeeded = document.getElementById('follow_up_needed');
+            const followUpMedicalSection = document.getElementById('follow_up_section');
+            
+            if (followUpNeeded && followUpMedicalSection) {
+                followUpNeeded.addEventListener('change', function() {
+                    followUpMedicalSection.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+        };
+        
+        // Dynamic goals for Support Plans
+        const setupGoals = function() {
+            const addGoalBtn = document.getElementById('add-goal');
+            const goalsContainer = document.getElementById('goals-container');
+            const goalCountInput = document.getElementById('goal_count');
+            
+            if (addGoalBtn && goalsContainer && goalCountInput) {
+                // Add goal functionality
+                addGoalBtn.addEventListener('click', function() {
+                    const goalCount = parseInt(goalCountInput.value) + 1;
+                    
+                    const goalItem = document.createElement('div');
+                    goalItem.className = 'goal-item border rounded p-3 mb-3';
+                    goalItem.innerHTML = `
+                        <div class="mb-2">
+                            <label class="form-label">Goal ${goalCount}</label>
+                            <input type="text" class="form-control" name="goal_${goalCount}" 
+                                   placeholder="Describe the goal..." required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Strategies</label>
+                            <textarea class="form-control" name="strategies_${goalCount}" rows="2"
+                                      placeholder="Describe strategies to achieve this goal..."></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Timeline</label>
+                                <input type="text" class="form-control" name="timeline_${goalCount}"
+                                       placeholder="Expected timeline...">
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Progress Indicators</label>
+                                <input type="text" class="form-control" name="progress_indicators_${goalCount}"
+                                       placeholder="How progress will be measured...">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-goal">
+                            <i class="bi bi-trash"></i> Remove Goal
+                        </button>
+                    `;
+                    
+                    goalsContainer.appendChild(goalItem);
+                    goalCountInput.value = goalCount;
+                    
+                    // Add event listener to the new remove button
+                    const removeBtn = goalItem.querySelector('.remove-goal');
+                    removeBtn.addEventListener('click', function() {
+                        goalsContainer.removeChild(goalItem);
+                        updateGoalCount();
+                    });
+                });
+                
+                // Remove goal functionality
+                document.querySelectorAll('.remove-goal').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const goalItem = this.closest('.goal-item');
+                        goalsContainer.removeChild(goalItem);
+                        updateGoalCount();
+                    });
+                });
+                
+                // Update goal count and re-index goals
+                function updateGoalCount() {
+                    const goalItems = goalsContainer.querySelectorAll('.goal-item');
+                    
+                    // Update the count
+                    goalCountInput.value = goalItems.length;
+                    
+                    // Re-index goals if needed
+                    goalItems.forEach((item, index) => {
+                        const newIndex = index + 1;
+                        const label = item.querySelector('label');
+                        label.textContent = `Goal ${newIndex}`;
+                        
+                        // Update input names
+                        const inputs = item.querySelectorAll('input, textarea');
+                        inputs.forEach(input => {
+                            const name = input.getAttribute('name');
+                            const baseName = name.split('_')[0];
+                            input.setAttribute('name', `${baseName}_${newIndex}`);
+                        });
+                    });
+                }
+            }
+        };
+        
+        // Initialize functionality
+        toggleSections();
+        setupGoals();
+    });
+</script>
+{% endblock %}

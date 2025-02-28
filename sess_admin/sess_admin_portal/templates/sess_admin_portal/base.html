@@ -75,6 +75,14 @@
                                     <i class="bi bi-calendar-minus"></i>
                                     <span>PTO Management</span>
                                 </a>
+                                <a href="{% url 'client_reports' %}" class="sidebar-sublink">
+                                    <i class="bi bi-calendar-minus"></i>
+                                    <span>Client Reports</span>
+                                </a>
+                                <a href="{% url 'employee_requests' %}" class="sidebar-sublink">
+                                    <i class="bi bi-calendar-minus"></i>
+                                    <span>Submit Request</span>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -97,6 +105,25 @@
             <span>Timesheet Admin</span>
         </a>
     </div>
+
+    <div class="sidebar-nav-item">
+        <a href="{% url 'admin_pto' %}" class="sidebar-link {% if 'admin_timesheets' in request.path %}active{% endif %}">
+            <i class="bi bi-file-earmark-check"></i>
+            <span>PTO Admin</span>
+        </a>
+    </div>
+
+    <div class="sidebar-nav-item">
+        <a href="{% url 'admin_report' %}" class="sidebar-link {% if 'admin_clients' in request.path %}active{% endif %}">
+            <i class="bi bi-people"></i>
+            <span>Report Admin</span>
+        </a>
+
+    <div class="sidebar-nav-item">
+        <a href="{% url 'admin_requests' %}" class="sidebar-link {% if 'admin_clients' in request.path %}active{% endif %}">
+            <i class="bi bi-people"></i>
+            <span>Request Admin</span>
+        </a>
     
     <div class="sidebar-nav-item">
         <a href="{% url 'analytics_dashboard' %}" class="sidebar-link {% if 'analytics' in request.path %}active{% endif %}">

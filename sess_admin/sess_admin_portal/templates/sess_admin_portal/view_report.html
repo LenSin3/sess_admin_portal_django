@@ -1,0 +1,803 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">{{ report.report_type }}</h2>
+        <p class="text-muted mb-0">Viewing report for {{ report.client.first_name }} {{ report.client.last_name }}</p>
+    </div>
+    <div>
+        <a href="{% url 'client_reports' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ report.title }}</h5>
+        <span class="badge 
+            {% if report.status == 'Draft' %}bg-secondary
+            {% elif report.status == 'Submitted' %}bg-warning
+            {% elif report.status == 'Approved' %}bg-success
+            {% elif report.status == 'Needs Revision' %}bg-danger
+            {% endif %}">
+            {{ report.status }}
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6>Report Information</h6>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted" width="40%">Report ID</td>
+                            <td>#{{ report.id }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Report Type</td>
+                            <td>{{ report.report_type }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Report Date</td>
+                            <td>{{ report.report_date|date:"M d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Submitted By</td>
+                            <td>{{ report.employee.first_name }} {{ report.employee.last_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Client</td>
+                            <td>{{ report.client.first_name }} {{ report.client.last_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Created On</td>
+                            <td>{{ report.created_at|date:"M d, Y g:i A" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Last Updated</td>
+                            <td>{{ report.updated_at|date:"M d, Y g:i A" }}</td>
+                        </tr>
+                        {% if report.submitted_at %}
+                        <tr>
+                            <td class="text-muted">Submitted On</td>
+                            <td>{{ report.submitted_at|date:"M d, Y g:i A" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if report.approved_at %}
+                        <tr>
+                            <td class="text-muted">Approved On</td>
+                            <td>{{ report.approved_at|date:"M d, Y g:i A" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if report.approved_by %}
+                        <tr>
+                            <td class="text-muted">Approved By</td>
+                            <td>{{ report.approved_by.get_full_name }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Status Timeline</h6>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-secondary"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-heading">
+                                <span class="badge bg-secondary">Created</span>
+                                <span class="ms-2 text-muted">{{ report.created_at|date:"M d, Y g:i A" }}</span>
+                            </div>
+                            <div class="timeline-body">
+                                Report created by {{ report.employee.first_name }} {{ report.employee.last_name }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if report.submitted_at %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-warning"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-heading">
+                                <span class="badge bg-warning">Submitted</span>
+                                <span class="ms-2 text-muted">{{ report.submitted_at|date:"M d, Y g:i A" }}</span>
+                            </div>
+                            <div class="timeline-body">
+                                Report submitted for approval
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.status == 'Needs Revision' %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-danger"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-heading">
+                                <span class="badge bg-danger">Needs Revision</span>
+                                <span class="ms-2 text-muted">{{ report.updated_at|date:"M d, Y g:i A" }}</span>
+                            </div>
+                            <div class="timeline-body">
+                                Report returned for revision
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.approved_at %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-heading">
+                                <span class="badge bg-success">Approved</span>
+                                <span class="ms-2 text-muted">{{ report.approved_at|date:"M d, Y g:i A" }}</span>
+                            </div>
+                            <div class="timeline-body">
+                                Report approved by {{ report.approved_by.get_full_name }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report Content -->
+        <div class="report-content mb-4">
+            <h6>Report Content</h6>
+            
+            <!-- Incident Report -->
+            {% if report.report_type == "Incident Report" %}
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Incident Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Incident Date</p>
+                            <p class="mb-0">{{ report.content.incident_date }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Incident Time</p>
+                            <p class="mb-0">{{ report.content.incident_time }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Location</p>
+                            <p class="mb-0">{{ report.content.incident_location }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Description</p>
+                        <p class="mb-0">{{ report.content.description }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Immediate Action Taken</p>
+                        <p class="mb-0">{{ report.content.immediate_action }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Medical Attention Required</p>
+                        <p class="mb-0">{% if report.content.medical_attention %}Yes{% else %}No{% endif %}</p>
+                    </div>
+                    
+                    {% if report.content.medical_attention %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Medical Attention Details</p>
+                        <p class="mb-0">{{ report.content.medical_attention_details }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.content.witnesses %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Witnesses</p>
+                        <p class="mb-0">{{ report.content.witnesses }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Follow-up Required</p>
+                        <p class="mb-0">{% if report.content.follow_up_required %}Yes{% else %}No{% endif %}</p>
+                    </div>
+                    
+                    {% if report.content.follow_up_required %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Follow-up Details</p>
+                        <p class="mb-0">{{ report.content.follow_up_details }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Sleep Log -->
+            {% elif report.report_type == "Sleep Log" %}
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Sleep Log Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Sleep Time</p>
+                            <p class="mb-0">{{ report.content.sleep_time }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Wake Time</p>
+                            <p class="mb-0">{{ report.content.wake_time }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Total Sleep</p>
+                            <p class="mb-0">{{ report.content.total_sleep }} hours</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Sleep Quality</p>
+                        <p class="mb-0">{{ report.content.sleep_quality }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Interruptions</p>
+                        <p class="mb-0">{{ report.content.interruptions }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Sleep Aid Used</p>
+                        <p class="mb-0">{% if report.content.sleep_aid_used %}Yes{% else %}No{% endif %}</p>
+                    </div>
+                    
+                    {% if report.content.sleep_aid_used %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Sleep Aid Details</p>
+                        <p class="mb-0">{{ report.content.sleep_aid_details }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.content.notes %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Additional Notes</p>
+                        <p class="mb-0">{{ report.content.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Individual Support Plan or Annual Support Plan Report -->
+            {% elif report.report_type == "Individual Support Plan (IPP)" or report.report_type == "Annual Support Plan Report" %}
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Client Profile</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Strengths</p>
+                        <p class="mb-0">{{ report.content.strengths }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Challenges</p>
+                        <p class="mb-0">{{ report.content.challenges }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Support Needs</p>
+                        <p class="mb-0">{{ report.content.support_needs }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Life Domains</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Health Considerations</p>
+                        <p class="mb-0">{{ report.content.health_considerations }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Living Situation</p>
+                        <p class="mb-0">{{ report.content.living_situation }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Community Involvement</p>
+                        <p class="mb-0">{{ report.content.community_involvement }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Education/Employment</p>
+                        <p class="mb-0">{{ report.content.education_employment }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Social Relationships</p>
+                        <p class="mb-0">{{ report.content.social_relationships }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Transportation</p>
+                        <p class="mb-0">{{ report.content.transportation }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Financial</p>
+                        <p class="mb-0">{{ report.content.financial }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Cultural Considerations</p>
+                        <p class="mb-0">{{ report.content.cultural_considerations }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Goals</h6>
+                </div>
+                <div class="card-body">
+                    {% if report.content.goals %}
+                        {% for goal in report.content.goals %}
+                        <div class="goal-item border rounded p-3 mb-3">
+                            <div class="mb-2">
+                                <h6 class="mb-1">Goal {{ forloop.counter }}</h6>
+                                <p class="mb-0">{{ goal.goal }}</p>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <p class="text-muted mb-1">Strategies</p>
+                                <p class="mb-0">{{ goal.strategies }}</p>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <p class="text-muted mb-1">Timeline</p>
+                                    <p class="mb-0">{{ goal.timeline }}</p>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <p class="text-muted mb-1">Progress Indicators</p>
+                                    <p class="mb-0">{{ goal.progress_indicators }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No goals have been defined.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Quarterly Progress Report -->
+            {% elif report.report_type == "Quarterly Progress Report" %}
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Quarterly Progress Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Quarter</p>
+                            <p class="mb-0">{{ report.content.quarter }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Year</p>
+                            <p class="mb-0">{{ report.content.year }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Progress on Goals</p>
+                        <p class="mb-0">{{ report.content.goals_progress }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Skills Development</p>
+                        <p class="mb-0">{{ report.content.skills_development }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Health Status</p>
+                        <p class="mb-0">{{ report.content.health_status }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Behavioral Observations</p>
+                        <p class="mb-0">{{ report.content.behavioral_observations }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Social Interactions</p>
+                        <p class="mb-0">{{ report.content.social_interactions }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Community Involvement</p>
+                        <p class="mb-0">{{ report.content.community_involvement }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Challenges</p>
+                        <p class="mb-0">{{ report.content.challenges }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Successes</p>
+                        <p class="mb-0">{{ report.content.successes }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Recommendations</p>
+                        <p class="mb-0">{{ report.content.recommendations }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Medical Visit Summary -->
+            {% elif report.report_type == "Medical Visit/Hospital Summary" %}
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Medical Visit Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Visit Date</p>
+                            <p class="mb-0">{{ report.content.visit_date }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Provider Name</p>
+                            <p class="mb-0">{{ report.content.provider_name }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Facility</p>
+                            <p class="mb-0">{{ report.content.facility }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Reason for Visit</p>
+                        <p class="mb-0">{{ report.content.reason_for_visit }}</p>
+                    </div>
+                    
+                    {% if report.content.diagnosis %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Diagnosis</p>
+                        <p class="mb-0">{{ report.content.diagnosis }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.content.treatment_plan %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Treatment Plan</p>
+                        <p class="mb-0">{{ report.content.treatment_plan }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.content.medications_prescribed %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Medications Prescribed</p>
+                        <p class="mb-0">{{ report.content.medications_prescribed }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Follow-up Needed</p>
+                        <p class="mb-0">{% if report.content.follow_up_needed %}Yes{% else %}No{% endif %}</p>
+                    </div>
+                    
+                    {% if report.content.follow_up_needed %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Follow-up Date</p>
+                        <p class="mb-0">{{ report.content.follow_up_date }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Follow-up Details</p>
+                        <p class="mb-0">{{ report.content.follow_up_details }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.content.notes %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Additional Notes</p>
+                        <p class="mb-0">{{ report.content.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Initial Assessment -->
+            {% elif report.report_type == "Initial Assessment Report" %}
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Assessment Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Assessment Date</p>
+                            <p class="mb-0">{{ report.content.assessment_date }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Assessor Name</p>
+                            <p class="mb-0">{{ report.content.assessor_name }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Presenting Issues</p>
+                        <p class="mb-0">{{ report.content.presenting_issues }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Client History</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Medical History</p>
+                        <p class="mb-0">{{ report.content.medical_history }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Family History</p>
+                        <p class="mb-0">{{ report.content.family_history }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Educational History</p>
+                        <p class="mb-0">{{ report.content.educational_history }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Employment History</p>
+                        <p class="mb-0">{{ report.content.employment_history }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Social History</p>
+                        <p class="mb-0">{{ report.content.social_history }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">Assessment Results</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Strengths</p>
+                        <p class="mb-0">{{ report.content.strengths }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Needs</p>
+                        <p class="mb-0">{{ report.content.needs }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Recommended Services</p>
+                        <p class="mb-0">{{ report.content.recommended_services }}</p>
+                    </div>
+                    
+                    {% if report.content.diagnosis %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Diagnosis</p>
+                        <p class="mb-0">{{ report.content.diagnosis }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Prognosis</p>
+                        <p class="mb-0">{{ report.content.prognosis }}</p>
+                    </div>
+                    
+                    {% if report.content.notes %}
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Additional Notes</p>
+                        <p class="mb-0">{{ report.content.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if report.notes %}
+        <div class="mb-4">
+            <h6>General Notes</h6>
+            <div class="p-3 bg-dark rounded">
+                {{ report.notes|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Admin Actions -->
+        {% if is_admin and report.status != 'Approved' %}
+        <div class="d-flex justify-content-end">
+            {% if report.status == 'Submitted' %}
+            <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#approveModal">
+                <i class="bi bi-check-circle me-1"></i> Approve Report
+            </button>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#revisionModal">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Request Revision
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Employee Actions -->
+        {% if can_edit %}
+        <div class="d-flex justify-content-end">
+            <a href="#" class="btn btn-primary me-2">
+                <i class="bi bi-pencil-square me-1"></i> Edit Report
+            </a>
+            
+            {% if report.is_draft %}
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#submitModal">
+                <i class="bi bi-send me-1"></i> Submit for Approval
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Admin Modals -->
+{% if is_admin and report.status == 'Submitted' %}
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Approve Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'approve_report' report.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve">
+                <div class="modal-body">
+                    <p>You are about to approve this report. Once approved, it cannot be edited.</p>
+                    <div class="mb-3">
+                        <label for="approval_notes" class="form-label">Approval Notes (Optional)</label>
+                        <textarea class="form-control" id="approval_notes" name="notes" rows="3" placeholder="Add any notes about this approval"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i> Approve Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Request Revision Modal -->
+<div class="modal fade" id="revisionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Revision</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'approve_report' report.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="revision">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        You are requesting revisions for this report. Please provide details on what needs to be corrected.
+                    </div>
+                    <div class="mb-3">
+                        <label for="revision_notes" class="form-label">Revision Notes</label>
+                        <textarea class="form-control" id="revision_notes" name="notes" rows="3" placeholder="Explain what changes are needed" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Request Revision
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Employee Modals -->
+{% if can_edit and report.is_draft %}
+<!-- Submit Modal -->
+<div class="modal fade" id="submitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submit Report for Approval</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'submit_report' report.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>You are about to submit this report for approval.</p>
+                    <p>Please make sure all required information is complete and accurate.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send me-1"></i> Submit Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block head %}
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline:before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        top: 0;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid var(--bg-darker);
+    }
+    
+    .timeline-content {
+        padding-bottom: 15px;
+    }
+    
+    .timeline-heading {
+        margin-bottom: 10px;
+    }
+    
+    .timeline-body {
+        color: var(--text-color);
+    }
+</style>
+{% endblock %}
