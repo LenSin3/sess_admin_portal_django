@@ -23,7 +23,7 @@
                 <i class="bi bi-calendar me-1"></i> Pay Period
             </button>
             <ul class="dropdown-menu" aria-labelledby="payPeriodDropdown">
-                <li><a class="dropdown-item active" href="#">Current Period ({{ current_period }})</a></li>
+                <li><a class="dropdown-item active" href="?">Current Period ({{ current_period }})</a></li>
                 {% for period in previous_periods %}
                 <li><a class="dropdown-item" href="?period={{ period.id }}">{{ period.label }}</a></li>
                 {% endfor %}
@@ -32,40 +32,58 @@
     </div>
 </div>
 
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <!-- Filters and Stats -->
 <div class="row mb-4">
     <div class="col-lg-8 mb-3 mb-lg-0">
         <div class="card">
             <div class="card-body p-3">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label small">Status Filter</label>
-                        <select class="form-select form-select-sm">
-                            <option value="">All Statuses</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                        </select>
+                <form id="filterForm" method="get" action="">
+                    <!-- Keep existing period parameter if set -->
+                    {% if request.GET.period %}
+                    <input type="hidden" name="period" value="{{ request.GET.period }}">
+                    {% endif %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small">Status Filter</label>
+                            <select class="form-select form-select-sm" name="status" onchange="document.getElementById('filterForm').submit()">
+                                <option value="">All Statuses</option>
+                                <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved</option>
+                                <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Employee</label>
+                            <select class="form-select form-select-sm" name="employee" onchange="document.getElementById('filterForm').submit()">
+                                <option value="">All Employees</option>
+                                {% for employee in employees %}
+                                <option value="{{ employee.id }}" {% if selected_employee == employee.id|stringformat:"i" %}selected{% endif %}>{{ employee.first_name }} {{ employee.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Sort By</label>
+                            <select class="form-select form-select-sm" name="sort_by" onchange="document.getElementById('filterForm').submit()">
+                                <option value="latest" {% if selected_sort == 'latest' %}selected{% endif %}>Latest First</option>
+                                <option value="status" {% if selected_sort == 'status' %}selected{% endif %}>Status</option>
+                                <option value="employee" {% if selected_sort == 'employee' %}selected{% endif %}>Employee Name</option>
+                                <option value="hours" {% if selected_sort == 'hours' %}selected{% endif %}>Hours (High to Low)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Employee</label>
-                        <select class="form-select form-select-sm">
-                            <option value="">All Employees</option>
-                            {% for employee in employees %}
-                            <option value="{{ employee.id }}">{{ employee.first_name }} {{ employee.last_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Sort By</label>
-                        <select class="form-select form-select-sm">
-                            <option value="latest">Latest First</option>
-                            <option value="status">Status</option>
-                            <option value="employee">Employee Name</option>
-                            <option value="hours">Hours (High to Low)</option>
-                        </select>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -121,7 +139,7 @@
                     <tr>
                         <td>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="submission-{{ submission.id }}">
+                                <input class="form-check-input submission-checkbox" type="checkbox" id="submission-{{ submission.id }}" value="{{ submission.id }}" {% if submission.status != 'Pending' %}disabled{% endif %}>
                                 <label class="form-check-label" for="submission-{{ submission.id }}"></label>
                             </div>
                         </td>
@@ -154,16 +172,16 @@
                         </td>
                         <td>
                             <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#timesheetModal" data-submission-id="{{ submission.id }}">
+                                <button type="button" class="btn btn-sm btn-outline-secondary view-timesheet" data-bs-toggle="modal" data-bs-target="#timesheetModal" data-submission-id="{{ submission.id }}">
                                     <i class="bi bi-eye"></i>
                                 </button>
                                 {% if submission.status == 'Pending' %}
-                                <button type="button" class="btn btn-sm btn-outline-success" onclick="approveTimesheet({{ submission.id }})">
+                                <a href="{% url 'approve_timesheet' submission.id %}" class="btn btn-sm btn-outline-success">
                                     <i class="bi bi-check-lg"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="rejectTimesheet({{ submission.id }})">
+                                </a>
+                                <a href="{% url 'reject_timesheet' submission.id %}" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-x-lg"></i>
-                                </button>
+                                </a>
                                 {% endif %}
                             </div>
                         </td>
@@ -227,18 +245,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <div id="approvalButtons">
-                    <button type="button" class="btn btn-success me-2" id="modalApprove">
+                    <a href="#" class="btn btn-success me-2" id="modalApprove">
                         <i class="bi bi-check-lg me-1"></i> Approve
-                    </button>
-                    <button type="button" class="btn btn-danger" id="modalReject">
+                    </a>
+                    <a href="#" class="btn btn-danger" id="modalReject">
                         <i class="bi bi-x-lg me-1"></i> Reject
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Hidden form for batch processing -->
+<form id="batchForm" method="post" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="selected_ids" id="selectedIds">
+    <input type="hidden" name="action" id="batchAction">
+</form>
 {% endblock %}
 
 {% block head %}
@@ -259,7 +283,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Select all checkbox functionality
         const selectAll = document.getElementById('selectAll');
-        const checkboxes = document.querySelectorAll('tbody .form-check-input');
+        const checkboxes = document.querySelectorAll('.submission-checkbox:not([disabled])');
         const batchApprove = document.getElementById('batchApprove');
         const batchReject = document.getElementById('batchReject');
         
@@ -276,106 +300,74 @@
         });
         
         function updateBatchButtons() {
-            const checkedCount = document.querySelectorAll('tbody .form-check-input:checked').length;
+            const checkedCount = document.querySelectorAll('.submission-checkbox:checked').length;
             batchApprove.disabled = checkedCount === 0;
             batchReject.disabled = checkedCount === 0;
         }
         
-        // Modal functionality
+        // Batch approval/rejection
+        batchApprove.addEventListener('click', function() {
+            batchProcess('approve');
+        });
+        
+        batchReject.addEventListener('click', function() {
+            batchProcess('reject');
+        });
+        
+        function batchProcess(action) {
+            const selectedIds = Array.from(document.querySelectorAll('.submission-checkbox:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) return;
+            
+            const confirmed = confirm(`Are you sure you want to ${action} the selected timesheets?`);
+            if (!confirmed) return;
+            
+            // You would implement form submission to a batch processing endpoint
+            document.getElementById('selectedIds').value = JSON.stringify(selectedIds);
+            document.getElementById('batchAction').value = action;
+            document.getElementById('batchForm').submit();
+        }
+        
+        // Modal functionality for viewing timesheet details
         const timesheetModal = document.getElementById('timesheetModal');
-        timesheetModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const submissionId = button.getAttribute('data-submission-id');
-            
-            // Here you would fetch the timesheet details with AJAX
-            // For demonstration, we'll just show a mock-up
-            setTimeout(function() {
-                document.getElementById('timesheetModalBody').innerHTML = `
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between mb-3">
-                            <div>
-                                <h6 class="mb-1">Employee:</h6>
-                                <div class="fw-medium">John Doe</div>
+        const viewButtons = document.querySelectorAll('.view-timesheet');
+        
+        viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const submissionId = this.getAttribute('data-submission-id');
+                const modalBody = document.getElementById('timesheetModalBody');
+                
+                // Fetch timesheet details via AJAX
+                fetch(`/timesheet-details/${submissionId}/`)
+                    .then(response => response.text())
+                    .then(html => {
+                        modalBody.innerHTML = html;
+                    })
+                    .catch(error => {
+                        modalBody.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                Error loading timesheet details. Please try again.
                             </div>
-                            <div>
-                                <h6 class="mb-1">Pay Period:</h6>
-                                <div class="fw-medium">May 1 - May 15, 2025</div>
-                            </div>
-                            <div>
-                                <h6 class="mb-1">Status:</h6>
-                                <span class="badge bg-warning">Pending</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Time In</th>
-                                    <th>Time Out</th>
-                                    <th>Hours</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Mon, May 1, 2025</td>
-                                    <td>9:00 AM</td>
-                                    <td>5:00 PM</td>
-                                    <td>8.0</td>
-                                </tr>
-                                <tr>
-                                    <td>Tue, May 2, 2025</td>
-                                    <td>9:30 AM</td>
-                                    <td>5:30 PM</td>
-                                    <td>8.0</td>
-                                </tr>
-                                <tr>
-                                    <td>Wed, May 3, 2025</td>
-                                    <td>9:00 AM</td>
-                                    <td>5:15 PM</td>
-                                    <td>8.25</td>
-                                </tr>
-                                <tr class="table-active fw-bold">
-                                    <td colspan="3" class="text-end">Total Hours:</td>
-                                    <td>24.25</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="mt-3">
-                        <h6>Notes</h6>
-                        <textarea class="form-control" id="adminNotes" rows="3" placeholder="Enter notes for employee (optional)"></textarea>
-                    </div>
-                `;
-            }, 1000);
-            
-            // Set up the approval buttons with the submission ID
-            document.getElementById('modalApprove').setAttribute('onclick', `approveTimesheet(${submissionId})`);
-            document.getElementById('modalReject').setAttribute('onclick', `rejectTimesheet(${submissionId})`);
+                        `;
+                        console.error('Error fetching timesheet details:', error);
+                    });
+                
+                // Set up the approval/rejection links
+                document.getElementById('modalApprove').href = `/approve-timesheet/${submissionId}/`;
+                document.getElementById('modalReject').href = `/reject-timesheet/${submissionId}/`;
+                
+                // Hide approval buttons if timesheet is not pending
+                const row = this.closest('tr');
+                const status = row.querySelector('.badge').textContent.trim();
+                const approvalButtons = document.getElementById('approvalButtons');
+                
+                if (status !== 'Pending') {
+                    approvalButtons.style.display = 'none';
+                } else {
+                    approvalButtons.style.display = 'block';
+                }
+            });
         });
     });
-    
-    function approveTimesheet(id) {
-        // Here you would send an AJAX request to approve the timesheet
-        console.log(`Approving timesheet ${id}`);
-        
-        // For demonstration, show an alert
-        alert(`Timesheet ${id} approved successfully!`);
-        
-        // In a real implementation, you would reload the page or update the UI
-    }
-    
-    function rejectTimesheet(id) {
-        // Here you would send an AJAX request to reject the timesheet
-        console.log(`Rejecting timesheet ${id}`);
-        
-        // For demonstration, show an alert
-        alert(`Timesheet ${id} rejected!`);
-        
-        // In a real implementation, you would reload the page or update the UI
-    }
 </script>
 {% endblock %}

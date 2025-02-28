@@ -1,0 +1,186 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Submit New Request</h2>
+        <p class="text-muted mb-0">Create a new request for administration</p>
+    </div>
+    <div>
+        <a href="{% url 'employee_requests' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Requests
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Request Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'create_request' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="request_type" class="form-label">Request Type</label>
+                        <select class="form-select" id="request_type" name="request_type" required>
+                            <option value="" selected disabled>Select a request type</option>
+                            <option value="Personal Info Change">Personal Info Change</option>
+                            <option value="Client Info Update">Client Info Update</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="form-text">
+                            Select the category that best describes your request.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required 
+                               placeholder="Brief summary of your request">
+                        <div class="form-text">
+                            Provide a clear, concise title for your request.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="6" required
+                                  placeholder="Please provide detailed information about your request..."></textarea>
+                        <div class="form-text">
+                            Include all relevant details to help us process your request efficiently.
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'employee_requests' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Request Types</h5>
+            </div>
+            <div class="card-body">
+                <div id="typeInfo">
+                    <div class="placeholder-content text-center py-4">
+                        <i class="bi bi-arrow-left-circle fs-3 text-muted"></i>
+                        <p class="mt-2 mb-0">Select a request type to see more information</p>
+                    </div>
+                    
+                    <div id="personalInfo" class="type-detail" style="display: none;">
+                        <h6 class="mb-2"><i class="bi bi-person-badge me-2 text-primary"></i> Personal Info Change</h6>
+                        <p>Use this type when you need to update your personal information in our records.</p>
+                        <ul class="mb-0">
+                            <li>Contact details (phone, email)</li>
+                            <li>Home address updates</li>
+                            <li>Emergency contact information</li>
+                            <li>Name changes</li>
+                            <li>Education or certification updates</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="clientInfo" class="type-detail" style="display: none;">
+                        <h6 class="mb-2"><i class="bi bi-people me-2 text-success"></i> Client Info Update</h6>
+                        <p>Choose this type when you need to update information about your assigned clients.</p>
+                        <ul class="mb-0">
+                            <li>Client contact information changes</li>
+                            <li>Changes to client medical information</li>
+                            <li>Updates to family member contacts</li>
+                            <li>Client preference changes</li>
+                            <li>Other client-related updates</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="technicalIssue" class="type-detail" style="display: none;">
+                        <h6 class="mb-2"><i class="bi bi-wrench me-2 text-warning"></i> Technical Issue</h6>
+                        <p>Report any technical problems or bugs you encounter with the system.</p>
+                        <ul class="mb-0">
+                            <li>Login or access problems</li>
+                            <li>System errors or bugs</li>
+                            <li>Missing or incorrect data</li>
+                            <li>Performance issues</li>
+                            <li>Feature requests</li>
+                        </ul>
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            Please include steps to reproduce the issue and any error messages you encounter.
+                        </div>
+                    </div>
+                    
+                    <div id="other" class="type-detail" style="display: none;">
+                        <h6 class="mb-2"><i class="bi bi-three-dots me-2 text-info"></i> Other</h6>
+                        <p>For any requests that don't fit into the above categories.</p>
+                        <p class="mb-0">Please be as specific as possible in your description to help us route your request to the appropriate department.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Tips for a Faster Response</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Be specific and provide all necessary details</li>
+                    <li>Use clear, concise language</li>
+                    <li>Indicate if your request is time-sensitive</li>
+                    <li>Include any relevant documentation or references</li>
+                    <li>For urgent matters, contact your supervisor directly</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const requestTypeSelect = document.getElementById('request_type');
+        const typeInfoContainers = document.querySelectorAll('.type-detail');
+        const placeholderContent = document.querySelector('.placeholder-content');
+        
+        // Show appropriate info based on selected request type
+        requestTypeSelect.addEventListener('change', function() {
+            // Hide all type detail containers
+            typeInfoContainers.forEach(container => {
+                container.style.display = 'none';
+            });
+            
+            // Hide placeholder
+            placeholderContent.style.display = 'none';
+            
+            // Show the selected type's info
+            const selectedValue = this.value.replace(/\s+/g, '').toLowerCase();
+            const selectedContainer = document.getElementById(selectedValue);
+            
+            if (selectedContainer) {
+                selectedContainer.style.display = 'block';
+            } else {
+                placeholderContent.style.display = 'block';
+            }
+        });
+    });
+</script>
+{% endblock %}

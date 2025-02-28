@@ -1,0 +1,294 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Client Reports</h2>
+        <p class="text-muted mb-0">Create and manage client reports</p>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" id="createReportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-plus-lg me-1"></i> Create Report
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="createReportDropdown">
+            {% for report_type_value, report_type_label in report_types %}
+            <li><a class="dropdown-item" href="{% url 'create_report' report_type_value %}">{{ report_type_label }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Reports Summary -->
+<div class="card mb-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Reports Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 text-center">
+            <div class="col-md-2 col-6">
+                <div class="status-card bg-dark p-3 rounded">
+                    <h3 class="mb-1">{{ total_reports }}</h3>
+                    <div class="small text-muted">Total Reports</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6">
+                <div class="status-card bg-secondary bg-opacity-25 p-3 rounded">
+                    <h3 class="mb-1 text-secondary">{{ draft_reports }}</h3>
+                    <div class="small text-muted">Drafts</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6">
+                <div class="status-card bg-warning bg-opacity-25 p-3 rounded">
+                    <h3 class="mb-1 text-warning">{{ submitted_reports }}</h3>
+                    <div class="small text-muted">Submitted</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6">
+                <div class="status-card bg-danger bg-opacity-25 p-3 rounded">
+                    <h3 class="mb-1 text-danger">{{ needs_revision_reports }}</h3>
+                    <div class="small text-muted">Needs Revision</div>
+                </div>
+            </div>
+            <div class="col-md-2 col-6">
+                <div class="status-card bg-success bg-opacity-25 p-3 rounded">
+                    <h3 class="mb-1 text-success">{{ approved_reports }}</h3>
+                    <div class="small text-muted">Approved</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Filters -->
+<div class="card mb-4">
+    <div class="card-body p-3">
+        <form id="filterForm" method="get" action="{% url 'client_reports' %}" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small">Status</label>
+                <select class="form-select" name="status" onchange="this.form.submit()">
+                    <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
+                    <option value="Draft" {% if selected_status == 'Draft' %}selected{% endif %}>Draft</option>
+                    <option value="Submitted" {% if selected_status == 'Submitted' %}selected{% endif %}>Submitted</option>
+                    <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved</option>
+                    <option value="Needs Revision" {% if selected_status == 'Needs Revision' %}selected{% endif %}>Needs Revision</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">Report Type</label>
+                <select class="form-select" name="type" onchange="this.form.submit()">
+                    <option value="" {% if not selected_type %}selected{% endif %}>All Types</option>
+                    {% for report_type_value, report_type_label in report_types %}
+                    <option value="{{ report_type_value }}" {% if selected_type == report_type_value %}selected{% endif %}>{{ report_type_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">Client</label>
+                <select class="form-select" name="client" onchange="this.form.submit()">
+                    <option value="" {% if not selected_client %}selected{% endif %}>All Clients</option>
+                    {% for client_item in clients %}
+                    <option value="{{ client_item.id }}" {% if selected_client == client_item.id|stringformat:"i" %}selected{% endif %}>{{ client_item.first_name }} {{ client_item.last_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reports Listing -->
+<div class="card">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Your Reports</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Client</th>
+                        <th>Date</th>
+                        <th>Last Updated</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr {% if report.status == 'Needs Revision' %}class="table-danger bg-opacity-10"{% endif %}>
+                        <td>{{ report.title }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if 'Incident' in report.report_type %}bg-danger
+                                {% elif 'Sleep Log' in report.report_type %}bg-info
+                                {% elif 'Individual Support Plan' in report.report_type %}bg-primary
+                                {% elif 'Quarterly' in report.report_type %}bg-success
+                                {% elif 'Medical' in report.report_type %}bg-warning
+                                {% elif 'Initial Assessment' in report.report_type %}bg-secondary
+                                {% elif 'Annual Support' in report.report_type %}bg-dark
+                                {% else %}bg-secondary{% endif %}">
+                                {{ report.report_type }}
+                            </span>
+                        </td>
+                        <td>{{ report.client.first_name }} {{ report.client.last_name }}</td>
+                        <td>{{ report.report_date|date:"M d, Y" }}</td>
+                        <td>{{ report.updated_at|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if report.status == 'Draft' %}bg-secondary
+                                {% elif report.status == 'Submitted' %}bg-warning
+                                {% elif report.status == 'Approved' %}bg-success
+                                {% elif report.status == 'Needs Revision' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ report.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'view_report' report.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if report.is_editable %}
+                                <a href="{% url 'view_report' report.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                {% if report.status == 'Draft' %}
+                                <button type="button" class="btn btn-sm btn-outline-success submit-report" data-report-id="{{ report.id }}">
+                                    <i class="bi bi-check2-circle"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                            <p class="mt-3 mb-0">You haven't created any reports yet.</p>
+                            <button class="btn btn-primary mt-2" data-bs-toggle="dropdown" aria-expanded="false" data-bs-reference="parent">
+                                <i class="bi bi-plus-lg me-1"></i> Create Report
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% for report_type_value, report_type_label in report_types %}
+                                <li><a class="dropdown-item" href="{% url 'create_report' report_type_value %}">{{ report_type_label }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- About Report Types Section -->
+<div class="card mt-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Report Types</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="mb-3">
+                    <h6><span class="badge bg-danger me-2">Incident Report</span></h6>
+                    <p class="text-muted small">Document incidents that led to hospitalization or require immediate attention. Include detailed information about the incident, actions taken, and any follow-up required.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><span class="badge bg-info me-2">Sleep Log</span></h6>
+                    <p class="text-muted small">Track client's sleep patterns including sleep and wake times, quality of sleep, and any interventions used to improve sleep.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><span class="badge bg-primary me-2">Individual Support Plan (IPP)</span></h6>
+                    <p class="text-muted small">Comprehensive plan outlining the client's goals, strengths, challenges, and support strategies to help them achieve their objectives.</p>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="mb-3">
+                    <h6><span class="badge bg-success me-2">Quarterly Progress Report</span></h6>
+                    <p class="text-muted small">Regular updates on client progress toward goals, highlighting achievements, challenges, and adjustments to support strategies.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><span class="badge bg-warning me-2">Medical Visit Summary</span></h6>
+                    <p class="text-muted small">Document medical appointments and hospital visits, including diagnosis, treatment plans, medications, and follow-up requirements.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><span class="badge bg-secondary me-2">Initial Assessment</span> / <span class="badge bg-dark me-2">Annual Support Plan</span></h6>
+                    <p class="text-muted small">Comprehensive assessments of client needs, strengths, and service requirements, conducted at intake and annually thereafter.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submit Report Modal -->
+<div class="modal fade" id="submitReportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submit Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="submitReportForm" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>You are about to submit this report for approval. Once submitted, you will not be able to make further changes unless revision is requested.</p>
+                    <p>Are you sure you want to continue?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check2-circle me-1"></i> Submit Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+    .status-card {
+        transition: transform 0.2s ease;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-3px);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle submit report buttons
+        const submitButtons = document.querySelectorAll('.submit-report');
+        const submitReportForm = document.getElementById('submitReportForm');
+        const submitReportModal = new bootstrap.Modal(document.getElementById('submitReportModal'));
+        
+        submitButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const reportId = this.getAttribute('data-report-id');
+                submitReportForm.action = `/submit-report/${reportId}/`;
+                submitReportModal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}

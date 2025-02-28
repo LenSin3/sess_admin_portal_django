@@ -1,0 +1,221 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Edit PTO Request</h2>
+        <p class="text-muted mb-0">Modify your existing PTO request</p>
+    </div>
+    <div>
+        <a href="{% url 'pto_management' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to PTO
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Edit PTO Request</h5>
+            </div>
+            <div class="card-body">
+                <form id="ptoForm" method="post" action="{% url 'edit_pto' pto.id %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">PTO Type</label>
+                        <div class="btn-group w-100" role="group" aria-label="PTO Type">
+                            <input type="radio" class="btn-check" name="pto_type" id="fullDay" value="Full Day" {% if pto.pto_type == 'Full Day' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="fullDay">Full Day</label>
+                            
+                            <input type="radio" class="btn-check" name="pto_type" id="partialDay" value="Partial Day" {% if pto.pto_type == 'Partial Day' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="partialDay">Partial Day</label>
+                            
+                            <input type="radio" class="btn-check" name="pto_type" id="multipleDays" value="Multiple Days" {% if pto.pto_type == 'Multiple Days' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="multipleDays">Multiple Days</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Date Selector -->
+                    <div class="mb-3" id="singleDateContainer" {% if pto.pto_type != 'Full Day' and pto.pto_type != 'Partial Day' %}style="display: none;"{% endif %}>
+                        <label for="start_date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ pto.start_date|date:'Y-m-d' }}" required>
+                    </div>
+                    
+                    <!-- Date Range Selector (for multiple days) -->
+                    <div class="mb-3 row" id="dateRangeContainer" {% if pto.pto_type != 'Multiple Days' %}style="display: none;"{% endif %}>
+                        <div class="col-md-6">
+                            <label for="range_start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="range_start_date" name="start_date" value="{{ pto.start_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" value="{% if pto.end_date %}{{ pto.end_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                    </div>
+                    
+                    <!-- Time Selector (for partial day) -->
+                    <div class="mb-3 row" id="timeContainer" {% if pto.pto_type != 'Partial Day' %}style="display: none;"{% endif %}>
+                        <div class="col-md-6">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time" value="{% if pto.start_time %}{{ pto.start_time|time:'H:i' }}{% endif %}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_time" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time" value="{% if pto.end_time %}{{ pto.end_time|time:'H:i' }}{% endif %}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for PTO</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" required>{{ pto.reason }}</textarea>
+                        <div class="form-text">Please provide a brief explanation for your time off request.</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'pto_management' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Update PTO Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Request Status</h5>
+            </div>
+            <div class="card-body">
+                <p>This request is currently:</p>
+                <div class="text-center mb-3">
+                    <span class="badge bg-warning fs-5 p-2">Pending Approval</span>
+                </div>
+                <p class="text-muted small">
+                    You can edit or delete this request while it is still pending approval.
+                    Once approved or rejected, you will no longer be able to modify it.
+                </p>
+                
+                <hr class="my-3">
+                
+                <div class="d-flex justify-content-between">
+                    <span>Submitted On:</span>
+                    <span>{{ pto.submitted_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Need Help?</h5>
+            </div>
+            <div class="card-body">
+                <p>If you need to make significant changes to your PTO request, consider deleting this request and creating a new one.</p>
+                <div class="d-grid">
+                    <a href="{% url 'delete_pto' pto.id %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i> Delete This Request
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const fullDayRadio = document.getElementById('fullDay');
+        const partialDayRadio = document.getElementById('partialDay');
+        const multipleDaysRadio = document.getElementById('multipleDays');
+        
+        const singleDateContainer = document.getElementById('singleDateContainer');
+        const dateRangeContainer = document.getElementById('dateRangeContainer');
+        const timeContainer = document.getElementById('timeContainer');
+        
+        const startDateInput = document.getElementById('start_date');
+        const rangeStartDateInput = document.getElementById('range_start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        // Function to update form based on PTO type
+        function updateForm() {
+            if (fullDayRadio.checked) {
+                singleDateContainer.style.display = 'block';
+                dateRangeContainer.style.display = 'none';
+                timeContainer.style.display = 'none';
+                
+                // Set required attributes
+                startDateInput.required = true;
+                rangeStartDateInput.required = false;
+                endDateInput.required = false;
+            } else if (partialDayRadio.checked) {
+                singleDateContainer.style.display = 'block';
+                dateRangeContainer.style.display = 'none';
+                timeContainer.style.display = 'flex';
+                
+                // Set required attributes
+                startDateInput.required = true;
+                rangeStartDateInput.required = false;
+                endDateInput.required = false;
+            } else if (multipleDaysRadio.checked) {
+                singleDateContainer.style.display = 'none';
+                dateRangeContainer.style.display = 'flex';
+                timeContainer.style.display = 'none';
+                
+                // Set required attributes
+                startDateInput.required = false;
+                rangeStartDateInput.required = true;
+                endDateInput.required = true;
+            }
+        }
+        
+        // Add event listeners
+        fullDayRadio.addEventListener('change', updateForm);
+        partialDayRadio.addEventListener('change', updateForm);
+        multipleDaysRadio.addEventListener('change', updateForm);
+        
+        // Initialize form
+        updateForm();
+        
+        // Validate end date is after start date
+        const form = document.getElementById('ptoForm');
+        form.addEventListener('submit', function(event) {
+            if (multipleDaysRadio.checked) {
+                const startDate = new Date(rangeStartDateInput.value);
+                const endDate = new Date(endDateInput.value);
+                
+                if (endDate < startDate) {
+                    alert('End date must be after start date');
+                    event.preventDefault();
+                }
+            }
+            
+            if (partialDayRadio.checked) {
+                const startTime = document.getElementById('start_time').value;
+                const endTime = document.getElementById('end_time').value;
+                
+                if (!startTime || !endTime) {
+                    alert('Please enter both start and end times');
+                    event.preventDefault();
+                } else if (startTime >= endTime) {
+                    alert('End time must be after start time');
+                    event.preventDefault();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

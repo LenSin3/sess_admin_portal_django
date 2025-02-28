@@ -9,7 +9,7 @@ from .models import (
     Address, RegionalCenter, Client, Program, Category, Diagnosis, Medication, 
     ClientFamily, ExternalCareTeam, Appointment, Employee, DailyReport, 
     MedicalHistory, MedicationRegimen, ClientProgram, Timesheet, PTO, 
-    TimesheetSubmission, ProfilePicture, Announcement
+    TimesheetSubmission, ProfilePicture, Announcement, EmployeeRequest, ClientReport
 )
 
 # Custom Admin Site
@@ -60,6 +60,26 @@ class TimesheetInline(admin.TabularInline):
             return f"{obj.total_hours:.2f}"
         return "N/A"
     get_hours.short_description = "Hours"
+    
+class EmployeeRequestInline(admin.TabularInline):
+    model = EmployeeRequest
+    extra = 0
+    fields = ('request_type', 'date_requested', 'subject', 'description', 'status')
+    readonly_fields = ('request_type', 'date_requested', 'status')
+    
+class ClientReportInline(admin.TabularInline):
+    model = ClientReport
+    extra = 0
+    fields = ('report_date', 'report_type', 'report_preview')
+    readonly_fields = ('report_preview',)
+    
+    def report_preview(self, obj):
+        if obj.report:
+            return obj.report[:50] + "..." if len(obj.report) > 50 else obj.report
+        return ""
+    report_preview.short_description = "Report Preview"
+    
+    
 
 # Improving Client Admin
 @admin.register(Client)
@@ -352,22 +372,30 @@ class TimesheetAdmin(admin.ModelAdmin):
 # PTO Admin
 @admin.register(PTO)
 class PTOAdmin(admin.ModelAdmin):
-    list_display = ('employee_name', 'date', 'start_time', 'end_time', 'status', 'reason_preview')
-    list_filter = ('status', 'date')
+    list_display = ('employee_name', 'start_date', 'end_date', 'start_time', 'end_time', 'pto_type', 'status', 'reason_preview')
+    list_filter = ('status', 'start_date')
     search_fields = ('employee__first_name', 'employee__last_name', 'reason')
-    date_hierarchy = 'date'
+    date_hierarchy = 'start_date'
     raw_id_fields = ('employee',)
     
     def employee_name(self, obj):
         return f"{obj.employee.first_name} {obj.employee.last_name}"
     employee_name.short_description = "Employee"
     
-    def start_time(self, obj):
+    def start_date(self, obj):
         return obj.start_date
+    start_date.short_description = "Start Date"
+    
+    def end_date(self, obj):
+        return obj.end_date
+    end_date.short_description = "End Date"
+    
+    def start_time(self, obj):
+        return obj.start_time
     start_time.short_description = "Start Time"
     
     def end_time(self, obj):
-        return obj.end_date
+        return obj.end_time
     end_time.short_description = "End Time"
     
     def reason_preview(self, obj):
@@ -375,6 +403,12 @@ class PTOAdmin(admin.ModelAdmin):
             return obj.reason[:50] + "..." if len(obj.reason) > 50 else obj.reason
         return ""
     reason_preview.short_description = "Reason"
+    
+    def pto_type(self, obj):
+        return obj.pto_type
+    pto_type.short_description = "PTO Type"
+  
+    
 
 # TimesheetSubmission Admin (enhancing existing)
 @admin.register(TimesheetSubmission)
@@ -458,6 +492,72 @@ class AnnouncementAdmin(admin.ModelAdmin):
         return "No Image"
     image_preview.short_description = "Image Preview"
     
+@admin.register(EmployeeRequest)
+class EmployeeRequestAdmin(admin.ModelAdmin):
+    list_display = ('employee_name', 'request_type', 'subject', 'description', 'status')
+    list_filter = ('request_type', 'status', 'submitted_at')
+    search_fields = ('employee__first_name', 'employee__last_name', 'subject', 'description')
+    date_hierarchy = 'submitted_at'
+    
+    def employee_name(self, obj):
+        return f"{obj.employee.first_name} {obj.employee.last_name}"
+    employee_name.short_description = "Employee"
+    
+    def request_type(self, obj):
+        return obj.get_request_type_display()
+    request_type.short_description = "Request Type"
+    
+    def submitted_at(self, obj):
+        return obj.submitted_at
+    submitted_at.short_description = "Submitted At"
+
+    
+    def status(self, obj):
+        return obj.get_status_display()
+    status.short_description = "Status"
+    
+    def subject(self, obj):
+        return obj.subject
+    subject.short_description = "Subject"
+    
+    def description(self, obj):
+        return obj.description
+    description.short_description = "Description"
+    
+@admin.register(ClientReport)
+class ClientReportAdmin(admin.ModelAdmin):
+    list_display = ('client_name', 'report_date', 'report_type', 'report_preview', 'submitted_by')
+    list_filter = ('report_type', 'report_date')
+    search_fields = ('client__first_name', 'client__last_name', 'report')
+    date_hierarchy = 'report_date'
+    raw_id_fields = ('client',)
+    
+    def client_name(self, obj):
+        return f"{obj.client.first_name} {obj.client.last_name}"
+    client_name.short_description = "Client"
+    
+    def report_preview(self, obj):
+        if obj.report:
+            return obj.report[:50] + "..." if len(obj.report) > 50 else obj.report
+        return ""
+    report_preview.short_description = "Report Preview"
+    
+    def report_type(self, obj):
+        return obj.get_report_type_display()
+    report_type.short_description = "Report Type"
+    
+    def report_date(self, obj):
+        return obj.report_date
+    report_date.short_description = "Report Date"
+    
+    def report(self, obj):
+        return obj.report
+    report.short_description = "Report"
+    
+    def submitted_by(self, obj):
+        return f"{obj.employee.first_name} {obj.employee.last_name}"
+    submitted_by.short_description = "Submitted By"
+    
 # ========================
 
 # Register all models with the custom admin site
@@ -481,5 +581,7 @@ admin_site.register(PTO, PTOAdmin)
 admin_site.register(TimesheetSubmission, TimesheetSubmissionAdmin)
 admin_site.register(ProfilePicture, ProfilePictureAdmin)
 admin_site.register(Announcement, AnnouncementAdmin)
+admin_site.register(EmployeeRequest, EmployeeRequestAdmin)
+admin_site.register(ClientReport, ClientReportAdmin)
 
 

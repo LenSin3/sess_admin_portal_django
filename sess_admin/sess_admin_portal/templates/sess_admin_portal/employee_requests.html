@@ -1,0 +1,198 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Employee Requests</h2>
+        <p class="text-muted mb-0">Submit and track your requests to administration</p>
+    </div>
+    <div>
+        <a href="{% url 'create_request' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Submit New Request
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Request Summary Card -->
+<div class="card mb-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Request Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="status-card bg-dark p-3 rounded text-center">
+                    <h3 class="mb-1">{{ total_requests }}</h3>
+                    <div class="small text-muted">Total Requests</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="status-card bg-warning bg-opacity-25 p-3 rounded text-center">
+                    <h3 class="mb-1 text-warning">{{ pending_requests }}</h3>
+                    <div class="small text-muted">Pending</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="status-card bg-info bg-opacity-25 p-3 rounded text-center">
+                    <h3 class="mb-1 text-info">{{ in_progress_requests }}</h3>
+                    <div class="small text-muted">In Progress</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="status-card bg-success bg-opacity-25 p-3 rounded text-center">
+                    <h3 class="mb-1 text-success">{{ resolved_requests }}</h3>
+                    <div class="small text-muted">Resolved</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if pending_requests > 0 %}
+        <div class="alert alert-warning mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            You have {{ pending_requests }} pending request(s) awaiting admin review.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Request Filters -->
+<div class="card mb-4">
+    <div class="card-body p-3">
+        <form id="filterForm" method="get" action="{% url 'employee_requests' %}" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small">Status</label>
+                <select class="form-select" name="status" onchange="this.form.submit()">
+                    <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
+                    <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Resolved" {% if selected_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small">Request Type</label>
+                <select class="form-select" name="type" onchange="this.form.submit()">
+                    <option value="" {% if not selected_type %}selected{% endif %}>All Types</option>
+                    <option value="Personal Info Change" {% if selected_type == 'Personal Info Change' %}selected{% endif %}>Personal Info Change</option>
+                    <option value="Client Info Update" {% if selected_type == 'Client Info Update' %}selected{% endif %}>Client Info Update</option>
+                    <option value="Technical Issue" {% if selected_type == 'Technical Issue' %}selected{% endif %}>Technical Issue</option>
+                    <option value="Other" {% if selected_type == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Request Listing -->
+<div class="card">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Your Requests</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Subject</th>
+                        <th>Type</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request_item in requests %}
+                    <tr>
+                        <td>#{{ request_item.id }}</td>
+                        <td>{{ request_item.subject|truncatechars:30 }}</td>
+                        <td>{{ request_item.request_type }}</td>
+                        <td>{{ request_item.submitted_at|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if request_item.status == 'Pending' %}bg-warning
+                                {% elif request_item.status == 'In Progress' %}bg-info
+                                {% elif request_item.status == 'Resolved' %}bg-success
+                                {% elif request_item.status == 'Rejected' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ request_item.status }}
+                            </span>
+                        </td>
+                        <td>{{ request_item.updated_at|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'view_request' request_item.id %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="mt-3 mb-0">You haven't submitted any requests yet.</p>
+                            <a href="{% url 'create_request' %}" class="btn btn-primary mt-2">
+                                <i class="bi bi-plus-lg me-1"></i> Submit New Request
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Information about request types -->
+<div class="card mt-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">About Request Types</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="mb-2"><i class="bi bi-person-badge me-2"></i> Personal Info Change</h6>
+                <p class="text-muted mb-3">Use this type when you need to update your personal information such as contact details, address, or emergency contacts.</p>
+                
+                <h6 class="mb-2"><i class="bi bi-people me-2"></i> Client Info Update</h6>
+                <p class="text-muted mb-3">Choose this type when you need to update information about your assigned clients.</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="mb-2"><i class="bi bi-wrench me-2"></i> Technical Issue</h6>
+                <p class="text-muted mb-3">Report any technical problems or bugs you encounter with the system.</p>
+                
+                <h6 class="mb-2"><i class="bi bi-three-dots me-2"></i> Other</h6>
+                <p class="text-muted mb-3">For any requests that don't fit into the above categories.</p>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            For urgent matters, please contact your supervisor directly rather than submitting a request through this system.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+    .status-card {
+        transition: transform 0.2s ease;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-3px);
+    }
+</style>
+{% endblock %}

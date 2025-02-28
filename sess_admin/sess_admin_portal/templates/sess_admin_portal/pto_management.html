@@ -1,0 +1,228 @@
+{% extends 'sess_admin_portal/base.html' %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">PTO Management</h2>
+        <p class="text-muted mb-0">Request and manage your paid time off</p>
+    </div>
+    <div>
+        <a href="{% url 'create_pto' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Request PTO
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- PTO Summary Card -->
+<div class="card mb-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">PTO Summary for {{ request.user.employee.first_name }} {{ request.user.employee.last_name }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-4">
+            <div class="col-md-5">
+                <h6 class="mb-3">PTO Days</h6>
+                <div class="progress-container">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Days Used</span>
+                        <span>{{ days_taken }} / {{ total_pto_days }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ days_taken|floatformat:0 }}%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2 mt-3">
+                        <span>Days Pending</span>
+                        <span>{{ days_pending }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ days_pending|floatformat:0 }}%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2 mt-3">
+                        <span>Remaining Days</span>
+                        <span>{{ remaining_days }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ remaining_days|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-7">
+                <h6 class="mb-3">Request Status</h6>
+                <div class="row text-center g-2">
+                    <div class="col-4">
+                        <div class="status-card bg-dark p-3 rounded">
+                            <h3 class="mb-1">{{ total_requests }}</h3>
+                            <div class="small text-muted">Total Requests</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="status-card bg-warning bg-opacity-25 p-3 rounded">
+                            <h3 class="mb-1 text-warning">{{ pending_requests }}</h3>
+                            <div class="small text-muted">Pending</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="status-card bg-success bg-opacity-25 p-3 rounded">
+                            <h3 class="mb-1 text-success">{{ approved_requests }}</h3>
+                            <div class="small text-muted">Approved</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        PTO requests need approval from management. Please submit requests at least 2 weeks in advance when possible.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PTO Requests Table -->
+<div class="card">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Your PTO Requests</h5>
+        <div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="filterDropdown">
+                    <li><a class="dropdown-item" href="#">All Requests</a></li>
+                    <li><a class="dropdown-item" href="#">Pending Only</a></li>
+                    <li><a class="dropdown-item" href="#">Approved Only</a></li>
+                    <li><a class="dropdown-item" href="#">Rejected Only</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#">Current Year</a></li>
+                    <li><a class="dropdown-item" href="#">Last 3 Months</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date(s)</th>
+                        <th>Type</th>
+                        <th>Days</th>
+                        <th>Reason</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pto in pto_requests %}
+                    <tr>
+                        <td>
+                            <div class="fw-medium">{{ pto.date_display }}</div>
+                            {% if pto.pto_type == 'Partial Day' %}
+                            <div class="small text-muted">{{ pto.time_display }}</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ pto.pto_type }}</td>
+                        <td>{{ pto.days_requested }}</td>
+                        <td>{{ pto.reason|truncatechars:30 }}</td>
+                        <td>{{ pto.submitted_at|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if pto.status == 'Pending' %}bg-warning
+                                {% elif pto.status == 'Approved' %}bg-success
+                                {% elif pto.status == 'Rejected' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ pto.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'view_pto' pto.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if pto.status == 'Pending' %}
+                                <a href="{% url 'edit_pto' pto.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'delete_pto' pto.id %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                            <p class="mt-3 mb-0">You haven't made any PTO requests yet.</p>
+                            <a href="{% url 'create_pto' %}" class="btn btn-primary mt-2">
+                                <i class="bi bi-plus-lg me-1"></i> Request PTO
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Company PTO Policy -->
+<div class="card mt-4">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">Company PTO Policy</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            All employees are eligible for Paid Time Off (PTO) benefits as outlined in the company handbook.
+        </div>
+        
+        <h6 class="fw-bold mb-2">Key Points:</h6>
+        <ul>
+            <li>Full-time employees receive 20 PTO days per calendar year</li>
+            <li>PTO requests should be submitted at least 2 weeks in advance when possible</li>
+            <li>All requests are subject to manager approval</li>
+            <li>PTO days do not roll over to the next calendar year</li>
+            <li>Unused PTO is not paid out upon termination of employment</li>
+        </ul>
+        
+        <p class="mb-0">For more information, please refer to the complete <a href="#">Company PTO Policy</a> in the employee handbook.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+    .progress-container {
+        padding: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 0.5rem;
+    }
+    
+    .status-card {
+        transition: transform 0.2s ease;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-3px);
+    }
+</style>
+{% endblock %}

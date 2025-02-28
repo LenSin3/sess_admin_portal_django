@@ -1,0 +1,73 @@
+{% comment %}
+This template is for the timesheet details modal content
+It will be loaded via AJAX when a user clicks the view button
+{% endcomment %}
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between mb-3">
+        <div>
+            <h6 class="mb-1">Employee:</h6>
+            <div class="fw-medium">{{ submission.employee.first_name }} {{ submission.employee.last_name }}</div>
+        </div>
+        <div>
+            <h6 class="mb-1">Pay Period:</h6>
+            <div class="fw-medium">{{ submission.start_date|date:"M d" }} - {{ submission.end_date|date:"M d, Y" }}</div>
+        </div>
+        <div>
+            <h6 class="mb-1">Status:</h6>
+            <span class="badge 
+                {% if submission.status == 'Pending' %}bg-warning
+                {% elif submission.status == 'Approved' %}bg-success
+                {% elif submission.status == 'Rejected' %}bg-danger
+                {% else %}bg-secondary{% endif %}">
+                {{ submission.status }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-sm table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Date</th>
+                <th>Time In</th>
+                <th>Time Out</th>
+                <th>Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for timesheet in timesheets %}
+            <tr>
+                <td>{{ timesheet.date|date:"D, M d, Y" }}</td>
+                <td>{{ timesheet.time_in|time:"g:i A" }}</td>
+                <td>{{ timesheet.time_out|time:"g:i A" }}</td>
+                <td>{{ timesheet.total_hours|floatformat:1 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">No timesheet entries found.</td>
+            </tr>
+            {% endfor %}
+            <tr class="table-active fw-bold">
+                <td colspan="3" class="text-end">Total Hours:</td>
+                <td>{{ total_hours|floatformat:1 }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% if submission.status == 'Rejected' %}
+<div class="mt-3">
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Rejected:</strong> The timesheet has been rejected. Please notify the employee to make corrections and resubmit.
+    </div>
+</div>
+{% endif %}
+
+<div class="mt-3">
+    <h6>Admin Notes</h6>
+    <textarea class="form-control" id="adminNotes" rows="3" placeholder="Enter notes for employee (optional)"></textarea>
+    <div class="form-text">These notes will be saved when you approve or reject the timesheet.</div>
+</div>

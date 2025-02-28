@@ -362,10 +362,12 @@ class Timesheet(models.Model):
             start_date = self.date.replace(day=16)
             next_month = start_date.replace(day=28) + datetime.timedelta(days=4)
             end_date = next_month - datetime.timedelta(days=next_month.day)
+  
+  
         return start_date, end_date
-
-    
-class PTO(models.Model):
+"""
+#  Old PTo model
+ class PTO(models.Model):
     date = models.DateField()
     start_date = models.TimeField()
     end_date = models.TimeField()
@@ -375,6 +377,8 @@ class PTO(models.Model):
     
     def __str__(self):
         return f"PTO: {self.date} - {self.time_off}"
+"""
+
     
 # Add to your models.py
 
@@ -429,3 +433,259 @@ class Announcement(models.Model):
         return delta.days
     
     
+# Update to models.py for PTO management
+class PTO(models.Model):
+    STATUS_PENDING = 'Pending'
+    STATUS_APPROVED = 'Approved'
+    STATUS_REJECTED = 'Rejected'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+    
+    TYPE_FULL_DAY = 'Full Day'
+    TYPE_PARTIAL_DAY = 'Partial Day'
+    TYPE_MULTIPLE_DAYS = 'Multiple Days'
+    TYPE_CHOICES = [
+        (TYPE_FULL_DAY, 'Full Day'),
+        (TYPE_PARTIAL_DAY, 'Partial Day'),
+        (TYPE_MULTIPLE_DAYS, 'Multiple Days'),
+    ]
+    
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='pto_requests')
+    pto_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=TYPE_FULL_DAY)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)  # For multiple days
+    start_time = models.TimeField(null=True, blank=True)  # For partial days
+    end_time = models.TimeField(null=True, blank=True)  # For partial days
+    reason = models.TextField(null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)  # For admin notes
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='reviewed_pto_requests'
+    )
+    
+    class Meta:
+        ordering = ['-submitted_at']
+        verbose_name = "PTO Request"
+        verbose_name_plural = "PTO Requests"
+    
+    def __str__(self):
+        return f"{self.employee} - {self.start_date} ({self.status})"
+    
+    @property
+    def is_pending(self):
+        return self.status == self.STATUS_PENDING
+    
+    @property
+    def is_approved(self):
+        return self.status == self.STATUS_APPROVED
+    
+    @property
+    def is_rejected(self):
+        return self.status == self.STATUS_REJECTED
+    
+    @property
+    def days_requested(self):
+        """Calculate the number of days requested"""
+        if self.pto_type == self.TYPE_FULL_DAY:
+            return 1
+        elif self.pto_type == self.TYPE_PARTIAL_DAY:
+            return 0.5
+        elif self.pto_type == self.TYPE_MULTIPLE_DAYS and self.end_date:
+            delta = self.end_date - self.start_date
+            return delta.days + 1
+        return 0
+    
+    @property
+    def date_display(self):
+        """Format the date(s) for display"""
+        if self.pto_type == self.TYPE_MULTIPLE_DAYS and self.end_date:
+            return f"{self.start_date.strftime('%b %d, %Y')} - {self.end_date.strftime('%b %d, %Y')}"
+        else:
+            return self.start_date.strftime("%b %d, %Y")
+    
+    @property
+    def time_display(self):
+        """Format the time for display"""
+        if self.pto_type == self.TYPE_PARTIAL_DAY and self.start_time and self.end_time:
+            return f"{self.start_time.strftime('%I:%M %p')} - {self.end_time.strftime('%I:%M %p')}"
+        return "All Day"
+    
+
+# Model for Employee Requests
+class EmployeeRequest(models.Model):
+    STATUS_PENDING = 'Pending'
+    STATUS_IN_PROGRESS = 'In Progress'
+    STATUS_RESOLVED = 'Resolved'
+    STATUS_REJECTED = 'Rejected'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_IN_PROGRESS, 'In Progress'),
+        (STATUS_RESOLVED, 'Resolved'),
+        (STATUS_REJECTED, 'Rejected')
+    ]
+    
+    TYPE_PERSONAL_INFO = 'Personal Info Change'
+    TYPE_CLIENT_INFO = 'Client Info Update'
+    TYPE_TECHNICAL_ISSUE = 'Technical Issue'
+    TYPE_OTHER = 'Other'
+    TYPE_CHOICES = [
+        (TYPE_PERSONAL_INFO, 'Personal Info Change'),
+        (TYPE_CLIENT_INFO, 'Client Info Update'),
+        (TYPE_TECHNICAL_ISSUE, 'Technical Issue'),
+        (TYPE_OTHER, 'Other')
+    ]
+    
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='requests')
+    request_type = models.CharField(max_length=50, choices=TYPE_CHOICES)
+    subject = models.CharField(max_length=200)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='resolved_requests'
+    )
+    resolution_notes = models.TextField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-submitted_at']
+        verbose_name = "Employee Request"
+        verbose_name_plural = "Employee Requests"
+    
+    def __str__(self):
+        return f"{self.employee} - {self.subject} ({self.status})"
+    
+    @property
+    def is_pending(self):
+        return self.status == self.STATUS_PENDING
+    
+    @property
+    def is_in_progress(self):
+        return self.status == self.STATUS_IN_PROGRESS
+    
+    @property
+    def is_resolved(self):
+        return self.status == self.STATUS_RESOLVED
+    
+    @property
+    def is_rejected(self):
+        return self.status == self.STATUS_REJECTED
+    
+    @property
+    def days_since_submission(self):
+        """Calculate days since the request was submitted"""
+        delta = timezone.now() - self.submitted_at
+        return delta.days
+    
+    
+# Model for Client Reports
+class ClientReport(models.Model):
+    TYPE_INCIDENT = 'Incident Report'
+    TYPE_SLEEP_LOG = 'Sleep Log'
+    TYPE_IPP = 'Individual Support Plan'
+    TYPE_QUARTERLY = 'Quarterly Progress Report'
+    TYPE_MEDICAL = 'Medical Visit Summary'
+    TYPE_INITIAL_ASSESSMENT = 'Initial Assessment'
+    TYPE_ANNUAL_SUPPORT = 'Annual Support Plan'
+    
+    TYPE_CHOICES = [
+        (TYPE_INCIDENT, 'Client Incident Report'),
+        (TYPE_SLEEP_LOG, 'Sleep Log Report'),
+        (TYPE_IPP, 'Individual Support Plan (IPP)'),
+        (TYPE_QUARTERLY, 'Quarterly Progress Report'),
+        (TYPE_MEDICAL, 'Medical Visit/Hospital Summary'),
+        (TYPE_INITIAL_ASSESSMENT, 'Initial Assessment Report'),
+        (TYPE_ANNUAL_SUPPORT, 'Annual Support Plan Report')
+    ]
+    
+    STATUS_DRAFT = 'Draft'
+    STATUS_SUBMITTED = 'Submitted'
+    STATUS_APPROVED = 'Approved'
+    STATUS_NEEDS_REVISION = 'Needs Revision'
+    
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_SUBMITTED, 'Submitted'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_NEEDS_REVISION, 'Needs Revision')
+    ]
+    
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='reports')
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='submitted_reports')
+    report_type = models.CharField(max_length=50, choices=TYPE_CHOICES)
+    title = models.CharField(max_length=200)
+    report_date = models.DateField()
+    content = models.JSONField()  # Store form data as JSON
+    notes = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='approved_reports'
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Client Report"
+        verbose_name_plural = "Client Reports"
+    
+    def __str__(self):
+        return f"{self.report_type} - {self.client} ({self.report_date})"
+    
+    @property
+    def is_draft(self):
+        return self.status == self.STATUS_DRAFT
+    
+    @property
+    def is_submitted(self):
+        return self.status == self.STATUS_SUBMITTED
+    
+    @property
+    def is_approved(self):
+        return self.status == self.STATUS_APPROVED
+    
+    @property
+    def needs_revision(self):
+        return self.status == self.STATUS_NEEDS_REVISION
+    
+    @property
+    def is_editable(self):
+        return self.status in [self.STATUS_DRAFT, self.STATUS_NEEDS_REVISION]
+    
+    def submit(self):
+        """Submit the report for approval"""
+        self.status = self.STATUS_SUBMITTED
+        self.submitted_at = timezone.now()
+        self.save()
+    
+    def approve(self, approved_by):
+        """Approve the report"""
+        self.status = self.STATUS_APPROVED
+        self.approved_at = timezone.now()
+        self.approved_by = approved_by
+        self.save()
+    
+    def request_revision(self):
+        """Request revision for the report"""
+        self.status = self.STATUS_NEEDS_REVISION
+        self.save()

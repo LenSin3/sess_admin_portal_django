@@ -35,7 +35,33 @@ urlpatterns = [
     path('announcements/<int:announcement_id>/view/', views.view_announcement, name='view_announcement'),
     
     # Admin timesheet management
+    # Admin timesheet management
     path('timesheets/', views.admin_timesheets, name='admin_timesheets'),
-    path('approve_timesheet/<int:submission_id>/', views.approve_timesheet, name='approve_timesheet'),
-    path('reject_timesheet/<int:submission_id>/', views.reject_timesheet, name='reject_timesheet'),
+    path('approve-timesheet/<int:submission_id>/', views.approve_timesheet, name='approve_timesheet'),
+    path('reject-timesheet/<int:submission_id>/', views.reject_timesheet, name='reject_timesheet'),
+    path('timesheet-details/<int:submission_id>/', views.get_timesheet_details, name='get_timesheet_details'),
+    path('batch-process-timesheets/', views.batch_process_timesheets, name='batch_process_timesheets'),
+    
+    # New PTO Management
+    path('pto/', views.pto_management, name='pto_management'),
+    path('pto/create/', views.create_pto, name='create_pto'),
+    path('pto/<int:pto_id>/edit/', views.edit_pto, name='edit_pto'),
+    path('pto/<int:pto_id>/delete/', views.delete_pto, name='delete_pto'),
+    path('pto/<int:pto_id>/view/', views.view_pto, name='view_pto'),
+    path('approve-pto/<int:pto_id>/', views.approve_pto, name='approve_pto'),
+    path('reject-pto/<int:pto_id>/', views.reject_pto, name='reject_pto'),
+    path('admin-pto/', views.admin_pto, name='admin_pto'),
+    
+    # General Requests
+    path('requests/', views.employee_requests, name='employee_requests'),
+    path('requests/create/', views.create_request, name='create_request'),
+    path('requests/<int:request_id>/view/', views.view_request, name='view_request'),
+    path('admin-requests/', views.admin_requests, name='admin_requests'),
+    path('resolve-request/<int:request_id>/', views.resolve_request, name='resolve_request'),
+    
+    # Client Reports
+    path('reports/', views.client_reports, name='client_reports'),
+    path('reports/create/<str:report_type>/', views.create_report, name='create_report'),
+    path('reports/<int:report_id>/view/', views.view_report, name='view_report'),
+    path('admin-reports/', views.admin_reports, name='admin_reports'),
 ]
