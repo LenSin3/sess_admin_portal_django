@@ -27,7 +27,7 @@ SECRET_KEY = "django-insecure-63_aa5)8!byrfp6#k4ybjjr$2=+nb$5@)0zflv%ko*2ru3_4d$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*.up.railway.app']
+ALLOWED_HOSTS = ['*']
 
 # Authentication settings
 LOGIN_URL = 'login'
@@ -49,11 +49,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "sess_admin_portal.apps.SessAdminPortalConfig",
     "smart_selects",
-    "whitenoise.runserver_nostatic",
+    "whitenoise",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -61,7 +62,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "sess_admin_portal.middleware.LoginRequiredMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    
 ]
 
 ROOT_URLCONF = "sess_admin.urls"
